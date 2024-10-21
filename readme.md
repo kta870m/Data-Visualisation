@@ -1,5 +1,5 @@
 ## Overview
-This repository is dedicated to the **Project Standup 1** assignment, where we collaboratively develop a software solution as part of our course. The project includes team-based coding, data analysis, and visualizations. The purpose of this `README.md` is to provide a clear guide on how to use the repository, track project progress, and contribute effectively.
+This repository is dedicated to the **Project Standup** assignment, where we collaboratively develop a software solution as part of our course. The project includes team-based coding, data analysis, and visualizations. The purpose of this `README.md` is to provide a clear guide on how to use the repository, track project progress, and contribute effectively.
 
 ## Project Structure
 The repository is organized into the following sections:
