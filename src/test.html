@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Hello World</title>
+        <meta charset="utf-8">
+        <meta name="language" content="english">
+        <meta name="keywords" content="Hello World,Lab,Tasks">
+        <meta name="description" content="Getting Started Task">
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            .warning {
+                color: red;
+            }
+            .line{
+                fill:none;
+                stroke-width: 2;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>NVIDIA stock</h1>
+        <div id="chart"></div>
+        <script>
+            const w = 600;
+            const h = 300;
+            const padding = 20;
+            dataset = [
+                {open: 10, close: 15, low: 9, high: 19},
+                {open: 20, close: 18, low: 12, high: 21},
+                {open: 14, close: 9, low: 9, high: 16},
+                {open: 12, close: 21, low: 8, high: 25},
+                {open: 15, close: 30, low: 10, high: 32},
+                {open: 23, close: 11, low: 6, high: 25},
+                {open: 18, close: 26, low: 14, high: 28},
+                {open: 6, close: 10, low: 3, high: 12},
+                {open: 17, close: 19, low: 11, high: 22}
+            ];
+
+
+            const xScale = d3.scaleBand()
+            .domain(d3.range(dataset.length))
+            .rangeRound([padding, w - padding])
+            .paddingInner(0.1);
+
+            const yScale = d3.scaleLinear()
+            .domain([0, d3.max(dataset, function(d){return d.high})])
+            .range([h - padding, padding]);
+
+            var svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", w)
+                .attr("height", h);
+            
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            var lines = svg.selectAll("line")
+            .data(dataset)
+            .enter()
+            .append("line")
+            .attr("class", "line")
+            .attr("x1", (d, i) => {return xScale(i) + xScale.bandwidth()/2;})
+            .attr("x2", (d, i) => {return xScale(i) + xScale.bandwidth()/2;})
+            .attr("y1", (d) => yScale(d.high))
+            .attr("y2", (d) => yScale(d.low))
+            .attr("stroke", (d) => d.open < d.close ? "green" : "red")
+
+            var rects = svg.selectAll("rect")
+            .data(dataset)
+            .enter()
+            .append("rect")
+            .attr("x", (d, i) => xScale(i))
+            .attr("y", d => d.close > d.open ? yScale(d.close) : yScale(d.open))
+            .attr("width", xScale.bandwidth())
+            .attr("height", d => d.close < d.open ? (yScale(d.close) - yScale(d.open)) : (yScale(d.open) - yScale(d.close)))
+            .attr("fill", (d) => d.open < d.close ? "green" : "red");
+
+            var xAxis = d3.axisBottom().ticks(10).scale(xScale);
+            var yAxis = d3.axisLeft().ticks(10).scale(yScale);
+
+            svg.append("g").attr("transform", "translate(0, " + (h - padding) + ")").call(xAxis);
+            svg.append("g").attr("transform", "translate(" + padding + ", 0)").call(yAxis);
+        </script>
+        <br>
+    </body>
+</html>
