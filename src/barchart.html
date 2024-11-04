@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Healthcare Employment by Country</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: black;
+            shape-rendering: crispEdges;
+        }
+        .bar {
+            fill: steelblue;
+        }
+        .bar:hover {
+            fill: orange;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            padding: 5px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 1px solid #000;
+            border-radius: 5px;
+            pointer-events: none;
+            opacity: 0;
+        }
+        #yearSelect {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Total Healthcare and Social Employment by Country</h2>
+    <h4>Select a years: <select id="yearSelect"></select></h4>
+    <svg width="1000" height="600"></svg>
+    <script>
+        const margin = { top: 20, right: 30, bottom: 120, left: 100 },
+              width = 1000 - margin.left - margin.right,
+              height = 600 - margin.top - margin.bottom;
+
+        const svg = d3.select("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Tooltip setup
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip");
+
+        // Load the CSV data file
+        d3.csv("../data/data.csv").then(function(data) {
+            // Parse data for numeric fields and gather unique years
+            data.forEach(d => {
+                d.OBS_VALUE = +d.OBS_VALUE;
+                d.Year = d.TIME_PERIOD;
+            });
+
+            const years = Array.from(new Set(data.map(d => d.Year))).sort();
+
+            // Populate the year selection dropdown
+            const yearSelect = d3.select("#yearSelect");
+            yearSelect.selectAll("option")
+                .data(years)
+                .enter()
+                .append("option")
+                .attr("value", d => d)
+                .text(d => d);
+
+            // Set scales for axes
+            const x = d3.scaleBand().range([0, width]).padding(0.1);
+            const y = d3.scaleLinear().range([height, 0]);
+
+            // Add X axis
+            const xAxis = svg.append("g")
+                             .attr("transform", "translate(0," + height + ")");
+
+            // Add Y axis
+            const yAxis = svg.append("g");
+
+            // Function to update the chart based on selected year
+            function updateChart(selectedYear) {
+                const filteredData = data.filter(d => d.Year === selectedYear);
+
+                // Update the domains of the scales based on the filtered data
+                x.domain(filteredData.map(d => d.Country));
+                y.domain([0, d3.max(filteredData, d => d.OBS_VALUE)]).nice();
+
+                // Update the X axis
+                xAxis.transition().duration(500).call(d3.axisBottom(x))
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                // Update the Y axis
+                yAxis.transition().duration(500).call(d3.axisLeft(y));
+
+                // Bind data to the bars and create/update/remove as needed
+                const bars = svg.selectAll(".bar")
+                    .data(filteredData, d => d.Country);
+
+                bars.enter()
+                    .append("rect")
+                    .attr("class", "bar")
+                    .attr("x", d => x(d.Country))
+                    .attr("width", x.bandwidth())
+                    .attr("y", y(0))
+                    .attr("height", 0)
+                    .on("mouseover", function(event, d) {
+                        tooltip.transition()
+                               .duration(200)
+                               .style("opacity", .9);
+                        tooltip.html("Country: " + d.Country + "<br>Value: " + d3.format(",")(d.OBS_VALUE))
+                               .style("left", (event.pageX + 5) + "px")
+                               .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function() {
+                        tooltip.transition()
+                               .duration(500)
+                               .style("opacity", 0);
+                    })
+                    .transition()
+                    .duration(800)
+                    .attr("y", d => y(d.OBS_VALUE))
+                    .attr("height", d => height - y(d.OBS_VALUE));
+
+                bars.transition()
+                    .duration(800)
+                    .attr("x", d => x(d.Country))
+                    .attr("width", x.bandwidth())
+                    .attr("y", d => y(d.OBS_VALUE))
+                    .attr("height", d => height - y(d.OBS_VALUE));
+
+                bars.exit()
+                    .transition()
+                    .duration(500)
+                    .attr("y", y(0))
+                    .attr("height", 0)
+                    .remove();
+            }
+
+            // Initial chart rendering for the first year
+            updateChart(years[0]);
+
+            // Update chart when a new year is selected
+            yearSelect.on("change", function() {
+                const selectedYear = this.value;
+                updateChart(selectedYear);
+            });
+        });
+    </script>
+</body>
+</html>
