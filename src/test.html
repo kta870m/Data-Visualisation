@@ -1,30 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>Hello World</title>
+        <title>NVIDIA Stock Visualization</title>
         <meta charset="utf-8">
-        <meta name="language" content="english">
-        <meta name="keywords" content="Hello World,Lab,Tasks">
-        <meta name="description" content="Getting Started Task">
+        <meta name="language" content="English">
+        <meta name="keywords" content="NVIDIA, Stock Prices, Data Visualization">
+        <meta name="description" content="Interactive chart visualizing NVIDIA stock prices">
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <style>
-            .warning {
-                color: red;
+            .tooltip {
+                position: absolute;
+                text-align: center;
+                width: 120px;
+                height: 50px;
+                padding: 2px;
+                font: 12px sans-serif;
+                background: lightsteelblue;
+                border: 0px;
+                border-radius: 8px;
+                pointer-events: none;
+                opacity: 0;
             }
-            .line{
-                fill:none;
+            .line {
+                fill: none;
                 stroke-width: 2;
+            }
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
             }
         </style>
     </head>
     <body>
-        <h1>NVIDIA stock</h1>
+        <h1>NVIDIA Stock Data</h1>
         <div id="chart"></div>
         <script>
             const w = 600;
             const h = 300;
-            const padding = 20;
-            dataset = [
+            const padding = 40;
+
+            const dataset = [
                 {open: 10, close: 15, low: 9, high: 19},
                 {open: 20, close: 18, low: 12, high: 21},
                 {open: 14, close: 9, low: 9, high: 16},
@@ -36,49 +53,66 @@
                 {open: 17, close: 19, low: 11, high: 22}
             ];
 
-
             const xScale = d3.scaleBand()
-            .domain(d3.range(dataset.length))
-            .rangeRound([padding, w - padding])
-            .paddingInner(0.1);
+                .domain(d3.range(dataset.length))
+                .range([padding, w - padding])
+                .padding(0.1);
 
             const yScale = d3.scaleLinear()
-            .domain([0, d3.max(dataset, function(d){return d.high})])
-            .range([h - padding, padding]);
+                .domain([0, d3.max(dataset, d => d.high)])
+                .range([h - padding, padding]);
 
-            var svg = d3.select("#chart")
+            const svg = d3.select("#chart")
                 .append("svg")
                 .attr("width", w)
                 .attr("height", h);
-            
-            var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-            var lines = svg.selectAll("line")
-            .data(dataset)
-            .enter()
-            .append("line")
-            .attr("class", "line")
-            .attr("x1", (d, i) => {return xScale(i) + xScale.bandwidth()/2;})
-            .attr("x2", (d, i) => {return xScale(i) + xScale.bandwidth()/2;})
-            .attr("y1", (d) => yScale(d.high))
-            .attr("y2", (d) => yScale(d.low))
-            .attr("stroke", (d) => d.open < d.close ? "green" : "red")
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip");
 
-            var rects = svg.selectAll("rect")
-            .data(dataset)
-            .enter()
-            .append("rect")
-            .attr("x", (d, i) => xScale(i))
-            .attr("y", d => d.close > d.open ? yScale(d.close) : yScale(d.open))
-            .attr("width", xScale.bandwidth())
-            .attr("height", d => d.close < d.open ? (yScale(d.close) - yScale(d.open)) : (yScale(d.open) - yScale(d.close)))
-            .attr("fill", (d) => d.open < d.close ? "green" : "red");
+            svg.selectAll("line")
+                .data(dataset)
+                .enter()
+                .append("line")
+                .attr("class", "line")
+                .attr("x1", (d, i) => xScale(i) + xScale.bandwidth() / 2)
+                .attr("x2", (d, i) => xScale(i) + xScale.bandwidth() / 2)
+                .attr("y1", d => yScale(d.high))
+                .attr("y2", d => yScale(d.low))
+                .attr("stroke", d => d.open < d.close ? "green" : "red");
 
-            var xAxis = d3.axisBottom().ticks(10).scale(xScale);
-            var yAxis = d3.axisLeft().ticks(10).scale(yScale);
+            svg.selectAll("rect")
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr("x", (d, i) => xScale(i))
+                .attr("y", d => Math.min(yScale(d.open), yScale(d.close)))
+                .attr("width", xScale.bandwidth())
+                .attr("height", d => Math.abs(yScale(d.open) - yScale(d.close)))
+                .attr("fill", d => d.open < d.close ? "green" : "red")
+                .on("mouseover", function(event, d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("Open: " + d.open + "<br>Close: " + d.close + "<br>Low: " + d.low + "<br>High: " + d.high)
+                        .style("left", (event.pageX + 5) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function(d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
 
-            svg.append("g").attr("transform", "translate(0, " + (h - padding) + ")").call(xAxis);
-            svg.append("g").attr("transform", "translate(" + padding + ", 0)").call(yAxis);
+            const xAxis = d3.axisBottom().scale(xScale).ticks(dataset.length);
+            const yAxis = d3.axisLeft().scale(yScale).ticks(10);
+
+            svg.append("g")
+                .attr("transform", `translate(0, ${h - padding})`)
+                .call(xAxis);
+            svg.append("g")
+                .attr("transform", `translate(${padding}, 0)`)
+                .call(yAxis);
         </script>
         <br>
     </body>

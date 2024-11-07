@@ -36,7 +36,7 @@
 </head>
 <body>
     <h2>Total Healthcare and Social Employment by Country</h2>
-    <h4>Select a years: <select id="yearSelect"></select></h4>
+    <h4>Select a year: <select id="yearSelect"></select></h4>
     <svg width="1000" height="600"></svg>
     <script>
         const margin = { top: 20, right: 30, bottom: 120, left: 100 },
@@ -54,10 +54,10 @@
             .attr("class", "tooltip");
 
         // Load the CSV data file
-        d3.csv("../data/data.csv").then(function(data) {
+        d3.csv("../data/result/health_and_social.csv").then(function(data) {
             // Parse data for numeric fields and gather unique years
             data.forEach(d => {
-                d.OBS_VALUE = +d.OBS_VALUE;
+                d.OBS_VALUE = +d.Value;
                 d.Year = d.TIME_PERIOD;
             });
 
@@ -85,7 +85,7 @@
 
             // Function to update the chart based on selected year
             function updateChart(selectedYear) {
-                const filteredData = data.filter(d => d.Year === selectedYear);
+                const filteredData = data.filter(d => d.Year == selectedYear && d.Variable === "Practising midwives");
 
                 // Update the domains of the scales based on the filtered data
                 x.domain(filteredData.map(d => d.Country));

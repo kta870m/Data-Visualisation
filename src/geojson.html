@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimized Rotatable 3D Globe with D3</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        .country {
+            stroke: #fff;
+            stroke-width: 0.3;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 5px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="globe"></div>
+
+<script>
+    const width = 960, height = 600;
+    const svg = d3.select("#globe").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    const projection = d3.geoOrthographic()
+        .scale(250) // Reduced scale for performance
+        .translate([width / 2, height / 2])
+        .clipAngle(90)
+        .rotate([-105, -35]); 
+
+    const path = d3.geoPath().projection(projection);
+
+    const colorScale = d3.scaleSequential(d3.interpolatePlasma)
+        .domain([0, 5000]); 
+
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    let lastRender = Date.now();
+
+    // Load data and render globe
+    Promise.all([
+        d3.json("map.geojson").catch(error => console.error("GeoJSON file not found:", error)), 
+        d3.csv("../data/result/health_and_social.csv").catch(error => console.error("CSV file not found:", error))
+    ]).then(([geoData, csvData]) => {
+        if (!geoData || !csvData) {
+            console.error("Data loading failed.");
+            return;
+        }
+
+        const data = {};
+        csvData.forEach(d => {
+            data[d.COU] = +d.Value; 
+        });
+
+        svg.selectAll("path")
+            .data(geoData.features)
+            .enter().append("path")
+            .attr("class", "country")
+            .attr("fill", d => {
+                const value = data[d.properties.iso_a3];
+                return value ? colorScale(value) : "#ccc";
+            })
+            .attr("d", path)
+            .on("mouseover", (event, d) => {
+                const value = data[d.properties.iso_a3];
+                tooltip.transition().duration(200).style("opacity", .9);
+                tooltip.html(`<strong>${d.properties.name}</strong><br>Value: ${value || "N/A"}`)
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", () => {
+                tooltip.transition().duration(500).style("opacity", 0);
+            });
+
+        // Add mouse drag functionality for rotation with throttling
+        svg.call(d3.drag()
+            .on("drag", (event) => {
+                const now = Date.now();
+                if (now - lastRender < 30) return; // Throttle to update every 30ms
+                lastRender = now;
+
+                const dx = event.dx;
+                const dy = event.dy;
+
+                const rotate = projection.rotate();
+                const rotationLambda = rotate[0] + dx / 2;
+                const rotationPhi = rotate[1] - dy / 2;
+
+                projection.rotate([rotationLambda, rotationPhi]);
+                svg.selectAll("path").attr("d", path);
+            }));
+    }).catch(error => {
+        console.error('Error loading or parsing data:', error);
+    });
+</script>
+
+</body>
+</html>
