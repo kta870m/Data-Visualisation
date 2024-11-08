@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Optimized Rotatable 3D Globe with D3</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf"></script>
+
     <style>
         .country {
             stroke: #fff;
@@ -52,14 +54,15 @@
 
     // Load data and render globe
     Promise.all([
-        d3.json("map.geojson").catch(error => console.error("GeoJSON file not found:", error)), 
+        d3.json("map.json").catch(error => console.error("GeoJSON file not found:", error)), 
         d3.csv("../data/health_and_social.csv").catch(error => console.error("CSV file not found:", error))
     ]).then(([geoData, csvData]) => {
         if (!geoData || !csvData) {
             console.error("Data loading failed.");
             return;
         }
-        console.log(csvData);
+        geoData.features.map(d => d.properties = {iso_a3: d.properties.iso_a3, name: d.properties.name});
+        console.log(geoData);
         const data = {};
         csvData.forEach(d => {
             data[d.COU] = +d.Value; 
