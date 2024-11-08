@@ -42,8 +42,7 @@
 
     const path = d3.geoPath().projection(projection);
 
-    const colorScale = d3.scaleSequential(d3.interpolatePlasma)
-        .domain([0, 5000]); 
+    
 
     const tooltip = d3.select("body").append("div")
         .attr("class", "tooltip")
@@ -54,17 +53,22 @@
     // Load data and render globe
     Promise.all([
         d3.json("map.geojson").catch(error => console.error("GeoJSON file not found:", error)), 
-        d3.csv("../data/result/health_and_social.csv").catch(error => console.error("CSV file not found:", error))
+        d3.csv("../data/health_and_social.csv").catch(error => console.error("CSV file not found:", error))
     ]).then(([geoData, csvData]) => {
         if (!geoData || !csvData) {
             console.error("Data loading failed.");
             return;
         }
-
+        console.log(csvData);
         const data = {};
         csvData.forEach(d => {
             data[d.COU] = +d.Value; 
         });
+
+        console.log(data);
+        const colorScale = d3.scaleQuantize()
+                .domain([0,100])
+                .range(d3.schemeBlues[9]);
 
         svg.selectAll("path")
             .data(geoData.features)
