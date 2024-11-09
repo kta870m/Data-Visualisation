@@ -69,9 +69,13 @@
         });
 
         console.log(data);
-        const colorScale = d3.scaleQuantize()
-                .domain([0,100])
-                .range(d3.schemeBlues[9]);
+        const colorScale = d3.scalePow()
+        .exponent(0.4)
+    .domain([0, Math.max(...Object.values(data))])
+    .range(["#ffffff", "#0a8dd9"]);
+        // const colorScale = d3.scaleQuantize()
+        //         .domain([0, Math.max(...Object.values(data))])
+        //         .range(d3.schemeBlues[9]);
 
         svg.selectAll("path")
             .data(geoData.features)
