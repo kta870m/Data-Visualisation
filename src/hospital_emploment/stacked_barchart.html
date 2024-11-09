@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hospital Employment Stacked Bar Chart</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        #container {
+            display: flex;
+        }
+        #chart {
+            flex: 1;
+        }
+        #legend {
+            margin-left: 10px;
+            padding-top: 30px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="year-select">Select Year:</label>
+        <select id="year-select"></select>
+    </div>
+    <div id="container">
+        <div id="chart"></div>
+        <div id="legend"></div>
+    </div>
+
+    <script>
+        const margin = { top: 30, right: 50, bottom: 100, left: 100 },
+              width = 900 - margin.left - margin.right,
+              height = 800 - margin.top - margin.bottom;
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Define color map for each job role
+        const colorMap = {
+            "Associate nurses employed in hospitals": "#8dd3c7",
+            "Total hospital employment": "#ffffb3",
+            "Physicians employed in hospitals": "#bebada",
+            "Professional nurses and midwives employed in hospitals": "#fb8072",
+            "Healthcare assistants employed in hospitals": "#80b1d3",
+            "Other health service providers employed in hospitals": "#fdb462",
+            "Other staff employed in hospitals": "#b3de69"
+        };
+
+        const x = d3.scaleBand().range([0, width]).padding([0.2]);
+        const y = d3.scaleLinear().range([height, 0]);
+
+        d3.csv("../../data/result/hospital_employment.csv").then(data => {
+            // Convert year and value to numbers
+            data.forEach(d => {
+                d.TIME_PERIOD = +d.TIME_PERIOD;
+                d.Value = +d.Value;
+            });
+
+            // Get unique years and populate the dropdown
+            const years = Array.from(new Set(data.map(d => d.TIME_PERIOD)));
+            const yearSelect = d3.select("#year-select");
+            years.forEach(year => {
+                yearSelect.append("option").attr("value", year).text(year);
+            });
+
+            // Add legend
+            const legendContainer = d3.select("#legend");
+            Object.entries(colorMap).forEach(([role, color]) => {
+                const legendItem = legendContainer.append("div").attr("class", "legend-item");
+                legendItem.append("div")
+                    .attr("class", "legend-color")
+                    .style("background-color", color);
+                legendItem.append("span").text(role);
+            });
+
+            // Initial chart setup with the first year
+            const initialYear = years[0];
+            updateChart(initialYear);
+
+            yearSelect.on("change", function() {
+                const selectedYear = +this.value;
+                updateChart(selectedYear);
+            });
+
+            function updateChart(year) {
+                // Filter data for the selected year
+                const yearData = data.filter(d => d.TIME_PERIOD === year);
+
+                // Aggregate data by country and job role
+                const parsedData = d3.rollups(
+                    yearData,
+                    v => d3.sum(v, d => d.Value),
+                    d => d.Country,
+                    d => d.Variable
+                ).map(([country, values]) => ({
+                    country,
+                    ...Object.fromEntries(values)
+                }));
+
+                const subgroups = Object.keys(parsedData[0]).slice(1);
+                x.domain(parsedData.map(d => d.country));
+                y.domain([0, d3.max(parsedData, d => d3.sum(subgroups, k => d[k]))]);
+
+                const stackedData = d3.stack().keys(subgroups)(parsedData);
+
+                // Update bars with transition
+                const layer = svg.selectAll("g.layer")
+                    .data(stackedData, d => d.key);
+
+                layer.join(
+                    enter => enter.append("g").classed("layer", true).attr("fill", d => colorMap[d.key]),
+                    update => update,
+                    exit => exit.remove()
+                )
+                .selectAll("rect")
+                .data(d => d)
+                .join(
+                    enter => enter.append("rect")
+                        .attr("x", d => x(d.data.country))
+                        .attr("width", x.bandwidth())
+                        .attr("y", height) // Start from the bottom for animation
+                        .attr("height", 0)
+                        .transition().duration(500)
+                        .attr("y", d => y(d[1]))
+                        .attr("height", d => y(d[0]) - y(d[1])),
+                    update => update.transition().duration(500)
+                        .attr("x", d => x(d.data.country))
+                        .attr("width", x.bandwidth())
+                        .attr("y", d => y(d[1]))
+                        .attr("height", d => y(d[0]) - y(d[1])),
+                    exit => exit.transition().duration(500)
+                        .attr("y", height) // Transition to bottom
+                        .attr("height", 0)
+                        .remove()
+                );
+
+                // Update x-axis
+                svg.selectAll(".x-axis").remove();
+                svg.append("g")
+                    .attr("class", "x-axis")
+                    .attr("transform", `translate(0,${height})`)
+                    .call(d3.axisBottom(x))
+                    .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
+
+                // Update y-axis
+                svg.selectAll(".y-axis").remove();
+                svg.append("g")
+                    .attr("class", "y-axis")
+                    .call(d3.axisLeft(y));
+            }
+        });
+    </script>
+</body>
+</html>
