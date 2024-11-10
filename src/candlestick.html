@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Hello World</title>
+        <meta charset="utf-8">
+        <meta name="language" content="english">
+        <meta name="keywords" content="Hello World,Lab,Tasks">
+        <meta name="description" content="Getting Started Task">
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            .warning {
+                color: red;
+            }
+            .line{
+                fill:none;
+                stroke-width: 2;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>NVIDIA stock</h1>
+        <div id="chart"></div>
+        <script>
+            const w = 1000;
+            const h = 400;
+            const barPadding = 5;
+            const padding = 20;
+            function days(d) {
+                const date = new Date();
+                date.setDate(date.getDate() + d);
+                return date;
+            }
+            dataset = [
+                {date: days(0), open: 10, close: 15, low: 9, high: 19},
+                {date: days(1), open: 15, close: 18, low: 12, high: 21},
+                {date: days(2), open: 18, close: 9, low: 9, high: 22},
+                {date: days(3), open: 9, close: 21, low: 8, high: 25},
+                {date: days(4), open: 21, close: 30, low: 10, high: 32},
+                {date: days(5), open: 30, close: 13, low: 6, high: 31},
+                {date: days(6), open: 13, close: 11, low: 10, high: 15},
+                {date: days(7), open: 11, close: 18, low: 8, high: 22},
+                {date: days(8), open: 18, close: 26, low: 14, high: 28},
+                {date: days(9), open: 26, close: 10, low: 3, high: 27},
+                {date: days(10), open: 10, close: 19, low: 5, high: 22},
+                {date: days(11), open: 19, close: 24, low: 8, high: 25},
+                {date: days(12), open: 24, close: 10, low: 7, high: 30},
+                {date: days(13), open: 10, close: 15, low: 6, high: 20},
+                {date: days(14), open: 15, close: 22, low: 11, high: 26},
+                {date: days(15), open: 22, close: 21, low: 13, high: 25},
+                {date: days(16), open: 21, close: 18, low: 17, high: 23},
+
+                {date: days(17), open: 18, close: 14, low: 11, high: 24},
+                {date: days(18), open: 14, close: 11, low: 10, high: 16},
+                {date: days(19), open: 11, close: 19, low: 9, high: 25},
+                {date: days(20), open: 19, close: 23, low: 17, high: 27}
+            ];
+
+            const barWidth = (w - 2 * padding - barPadding)/dataset.length - barPadding;
+
+            const xScale = d3.scaleTime().domain([
+                d3.timeDay.offset(d3.min(dataset, function(d) { return d.date;}), -1),
+                d3.timeDay.offset(d3.max(dataset, function(d) { return d.date;}), 1)
+            ]).range([padding, w - padding]);
+
+            const yScale = d3.scaleLinear()
+            .domain([0, d3.max(dataset, function(d){return d.high})])
+            .range([h - padding, padding]);
+
+            var svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", w)
+                .attr("height", h);
+            
+            var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            var lines = svg.selectAll("line")
+            .data(dataset)
+            .enter()
+            .append("line")
+            .attr("class", "line")
+            .attr("x1", (d) => {return xScale(d.date);})
+            .attr("x2", (d) => {return xScale(d.date);})
+            .attr("y1", (d) => yScale(d.high))
+            .attr("y2", (d) => yScale(d.low))
+            .attr("stroke", (d) => d.open < d.close ? "green" : "red")
+
+            var rects = svg.selectAll("rect")
+            .data(dataset)
+            .enter()
+            .append("rect")
+            .attr("x", (d) => xScale(d.date) - barWidth/2)
+            .attr("y", d => d.close > d.open ? yScale(d.close) : yScale(d.open))
+            .attr("width", barWidth)
+            .attr("height", d => d.close < d.open ? (yScale(d.close) - yScale(d.open)) : (yScale(d.open) - yScale(d.close)))
+            .attr("fill", (d) => d.open < d.close ? "green" : "red");
+
+            var xAxis = d3.axisBottom().ticks(10).scale(xScale).ticks(dataset.length);
+            var yAxis = d3.axisLeft().ticks(10).scale(yScale);
+
+            svg.append("g").attr("transform", "translate(0, " + (h - padding) + ")").call(xAxis);
+            svg.append("g").attr("transform", "translate(" + padding + ", 0)").call(yAxis);
+        </script>
+        <br>
+    </body>
+</html>
