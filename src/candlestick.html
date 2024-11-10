@@ -94,7 +94,10 @@
 
             svg.append("g")
                 .attr("transform", `translate(0, ${h - padding})`)
-                .call(xAxis);
+                .call(xAxis)
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
 
             svg.append("g")
                 .attr("transform", `translate(${padding}, 0)`)
