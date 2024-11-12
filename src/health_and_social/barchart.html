@@ -54,7 +54,7 @@
             .attr("class", "tooltip");
 
         // Load the CSV data file
-        d3.csv("../data/result/health_and_social.csv").then(function(data) {
+        d3.csv("../../data/result/health_and_social.csv").then(function(data) {
             // Parse data for numeric fields and gather unique years
             data.forEach(d => {
                 d.OBS_VALUE = +d.Value;
