@@ -84,8 +84,10 @@
 
         const data = {};
         csvData.forEach(d => {
-            if (!data[d.COU]) data[d.COU] = [];
-            data[d.COU].push({ year: d.TIME_PERIOD, value: +d.Value, variable: d.Variable });
+            if(d.Measure == "Number of persons (head counts)"){
+                if (!data[d.COU]) data[d.COU] = [];
+                data[d.COU].push({ year: d.TIME_PERIOD, value: +d.Value, variable: d.Variable });
+            }
         });
 
         const colorScale = d3.scalePow()
@@ -126,7 +128,7 @@
             d3.select("#chart").html("");
             d3.select("#legend").html("");
 
-            const margin = {top: 20, right: 30, bottom: 40, left: 40},
+            const margin = {top: 20, right: 30, bottom: 40, left: 60},
                   chartWidth = 500 - margin.left - margin.right,
                   chartHeight = 300 - margin.top - margin.bottom;
 
@@ -140,20 +142,27 @@
             const years = Array.from(new Set(countryData.map(d => d.year)));
             const variables = Array.from(new Set(countryData.map(d => d.variable)));
 
-            const stackedData = d3.stack()
-                .keys(variables)
-                .value((d, key) => d[key] || 0)(
-                    d3.rollups(countryData, v => Object.fromEntries(v.map(d => [d.variable, d.value])), d => d.year)
-                        .map(([year, values]) => ({ year, ...values }))
-                );
+            // const stackedData = d3.stack()
+            //     .keys(variables)
+            //     .value((d, key) => d[key] || 0)(
+            //         d3.rollups(countryData, v => Object.fromEntries(v.map(d => [d.variable, d.value])), d => d.year, d => d.key)
+            //             .map(([year, values, key]) => ({ year, ...values ,key}))
+            //     );
+
+            console.log(countryData);
+            const stackedData = years.map(d => {return {year: d, data: countryData.filter(k => k.year == d)}}).sort((a,b) => a.year - b.year)
+            
+            const categories = stackedData.map(d => d.key);
+                
+            console.log(stackedData);
 
             const x = d3.scaleBand()
-                .domain(years)
+                .domain(stackedData.map(d => d.year))
                 .range([0, chartWidth])
                 .padding(0.2);
 
             const y = d3.scaleLinear()
-                .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+                .domain([0, d3.max(stackedData, d => d3.max(d.data, k => k.value))])
                 .nice()
                 .range([chartHeight, 0]);
 
@@ -165,14 +174,17 @@
                 .selectAll("g")
                 .data(stackedData)
                 .enter().append("g")
-                .attr("fill", d => color(d.key))
                 .selectAll("rect")
-                .data(d => d)
+                .data(k => k.data)
                 .enter().append("rect")
-                .attr("x", d => x(d.data.year))
-                .attr("y", d => y(d[1]))
-                .attr("height", d => y(d[0]) - y(d[1]))
-                .attr("width", x.bandwidth());
+                .attr("x", k => {
+                    console.log(k)
+                    return x(k.year) + variables.indexOf(k.variable) * x.bandwidth()/stackedData[0].data.length
+                })
+                .attr("y", k => y(k.value))
+                .attr("height", k => chartHeight -y(k.value))
+                .attr("width", x.bandwidth()/stackedData[0].data.length)
+                .attr("fill", d => color(d.variable));
 
             svg.append("g")
                 .attr("class", "x-axis")
