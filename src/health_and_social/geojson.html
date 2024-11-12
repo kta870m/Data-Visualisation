@@ -48,8 +48,8 @@
 
     // Load data and render map
     Promise.all([
-        d3.json("map.json").catch(error => console.error("GeoJSON file not found:", error)), 
-        d3.csv("../data/result/health_and_social.csv").catch(error => console.error("CSV file not found:", error))
+        d3.json("../map.json").catch(error => console.error("GeoJSON file not found:", error)), 
+        d3.csv("../../data/result/health_and_social.csv").catch(error => console.error("CSV file not found:", error))
     ]).then(([geoData, csvData]) => {
         if (!geoData || !csvData) {
             console.error("Data loading failed.");

@@ -2,18 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hospital Employment Stacked Bar Chart</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Employment Map Visualization</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
     <style>
+        .country {
+            stroke: #fff;
+            stroke-width: 0.3;
+            cursor: pointer;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 5px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        h2 {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+        }
         #container {
             display: flex;
         }
-        #chart {
-            flex: 1;
-        }
         #legend {
-            margin-left: 10px;
-            padding-top: 30px;
+            margin-left: 20px;
         }
         .legend-item {
             display: flex;
@@ -23,147 +42,174 @@
         .legend-color {
             width: 20px;
             height: 20px;
-            margin-right: 10px;
+            margin-right: 5px;
         }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <label for="year-select">Select Year:</label>
-        <select id="year-select"></select>
-    </div>
-    <div id="container">
-        <div id="chart"></div>
-        <div id="legend"></div>
-    </div>
 
-    <script>
-        const margin = { top: 30, right: 50, bottom: 100, left: 100 },
-              width = 900 - margin.left - margin.right,
-              height = 800 - margin.top - margin.bottom;
+<h2>Hospital Employment Across Countries</h2>
 
-        const svg = d3.select("#chart")
-            .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+<div id="globe"></div>
 
-        // Define color map for each job role
-        const colorMap = {
-            "Associate nurses employed in hospitals": "#8dd3c7",
-            "Total hospital employment": "#ffffb3",
-            "Physicians employed in hospitals": "#bebada",
-            "Professional nurses and midwives employed in hospitals": "#fb8072",
-            "Healthcare assistants employed in hospitals": "#80b1d3",
-            "Other health service providers employed in hospitals": "#fdb462",
-            "Other staff employed in hospitals": "#b3de69"
-        };
+<div id="container">
+    <div id="chart"></div> <!-- Div để hiển thị biểu đồ cột chồng -->
+    <div id="legend"></div> <!-- Div để hiển thị hướng dẫn -->
+</div>
 
-        const x = d3.scaleBand().range([0, width]).padding([0.2]);
-        const y = d3.scaleLinear().range([height, 0]);
+<script>
+    const width = 960, height = 600;
+    const svg = d3.select("#globe").append("svg")
+        .attr("width", width)
+        .attr("height", height);
 
-        d3.csv("../../data/result/hospital_employment.csv").then(data => {
-            // Convert year and value to numbers
-            data.forEach(d => {
-                d.TIME_PERIOD = +d.TIME_PERIOD;
-                d.Value = +d.Value;
+    const projection = d3.geoEquirectangular()
+        .scale(160)
+        .translate([width / 2, height / 2]);
+
+    const path = d3.geoPath().projection(projection);
+
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    Promise.all([
+        d3.json("../map.json").catch(error => console.error("GeoJSON file not found:", error)), 
+        d3.csv("../../data/result/hospital_employment.csv").catch(error => console.error("CSV file not found:", error))
+    ]).then(([geoData, csvData]) => {
+        if (!geoData || !csvData) {
+            console.error("Data loading failed.");
+            return;
+        }
+
+        const data = {};
+        csvData.forEach(d => {
+            if (!data[d.COU]) data[d.COU] = [];
+            data[d.COU].push({ year: d.TIME_PERIOD, value: +d.Value, variable: d.Variable });
+        });
+
+        const colorScale = d3.scalePow()
+            .exponent(0.4)
+            .domain([0, d3.max(csvData, d => +d.Value)])
+            .range(["#fdae61", "#d7191c"]);
+
+        svg.selectAll("path")
+            .data(geoData.features)
+            .enter().append("path")
+            .attr("class", "country")
+            .attr("fill", d => {
+                const value = data[d.properties.iso_a3] ? data[d.properties.iso_a3][0].value : null;
+                return value ? colorScale(value) : "#ccc";
+            })
+            .attr("d", path)
+            .on("mouseover", (event, d) => {
+                const countryData = data[d.properties.iso_a3];
+                const value = countryData ? countryData.reduce((acc, curr) => acc + curr.value, 0) : "N/A";
+                const formattedValue = value !== "N/A" ? value.toFixed(2) : value;
+                tooltip.transition().duration(200).style("opacity", .9);
+                tooltip.html(`<strong>${d.properties.name}</strong><br>Employment: ${formattedValue}`)
+                    .style("left", (event.pageX) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", () => {
+                tooltip.transition().duration(500).style("opacity", 0);
+            })
+            .on("click", (event, d) => {
+                const countryData = data[d.properties.iso_a3];
+                if (countryData) {
+                    showStackedBarChart(d.properties.name, countryData);
+                }
             });
 
-            // Get unique years and populate the dropdown
-            const years = Array.from(new Set(data.map(d => d.TIME_PERIOD)));
-            const yearSelect = d3.select("#year-select");
-            years.forEach(year => {
-                yearSelect.append("option").attr("value", year).text(year);
-            });
+        function showStackedBarChart(countryName, countryData) {
+            // Clear previous chart and legend
+            d3.select("#chart").html("");
+            d3.select("#legend").html("");
 
-            // Add legend
-            const legendContainer = d3.select("#legend");
-            Object.entries(colorMap).forEach(([role, color]) => {
-                const legendItem = legendContainer.append("div").attr("class", "legend-item");
-                legendItem.append("div")
-                    .attr("class", "legend-color")
-                    .style("background-color", color);
-                legendItem.append("span").text(role);
-            });
+            const margin = {top: 20, right: 30, bottom: 40, left: 40},
+                  chartWidth = 500 - margin.left - margin.right,
+                  chartHeight = 300 - margin.top - margin.bottom;
 
-            // Initial chart setup with the first year
-            const initialYear = years[0];
-            updateChart(initialYear);
+            const svg = d3.select("#chart").append("svg")
+                .attr("width", chartWidth + margin.left + margin.right)
+                .attr("height", chartHeight + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            yearSelect.on("change", function() {
-                const selectedYear = +this.value;
-                updateChart(selectedYear);
-            });
+            // Group data by year and stack by variable
+            const years = Array.from(new Set(countryData.map(d => d.year)));
+            const variables = Array.from(new Set(countryData.map(d => d.variable)));
 
-            function updateChart(year) {
-                const yearData = data.filter(d => d.TIME_PERIOD === year);
-
-                // Aggregate data by country and job role
-                const parsedData = d3.rollups(
-                    yearData,
-                    v => d3.sum(v, d => d.Value),
-                    d => d.Country,
-                    d => d.Variable
-                ).map(([country, values]) => ({
-                    country,
-                    ...Object.fromEntries(values)
-                }));
-
-                const subgroups = Object.keys(parsedData[0]).slice(1);
-                x.domain(parsedData.map(d => d.country));
-                y.domain([0, d3.max(parsedData, d => d3.sum(subgroups, k => d[k]))]);
-
-                const stackedData = d3.stack().keys(subgroups)(parsedData);
-
-                // Update bars with transition
-                const layer = svg.selectAll("g.layer")
-                    .data(stackedData, d => d.key);
-
-                layer.join(
-                    enter => enter.append("g").classed("layer", true).attr("fill", d => colorMap[d.key]),
-                    update => update,
-                    exit => exit.remove()
-                )
-                .selectAll("rect")
-                .data(d => d)
-                .join(
-                    enter => enter.append("rect")
-                        .attr("x", d => x(d.data.country))
-                        .attr("width", x.bandwidth())
-                        .attr("y", height) // Start from the bottom for animation
-                        .attr("height", 0)
-                        .transition().duration(500)
-                        .attr("y", d => y(d[1]))
-                        .attr("height", d => y(d[0]) - y(d[1])),
-                    update => update.transition().duration(500)
-                        .attr("x", d => x(d.data.country))
-                        .attr("width", x.bandwidth())
-                        .attr("y", d => y(d[1]))
-                        .attr("height", d => y(d[0]) - y(d[1])),
-                    exit => exit.transition().duration(500)
-                        .attr("y", height) // Transition to bottom
-                        .attr("height", 0)
-                        .remove()
+            const stackedData = d3.stack()
+                .keys(variables)
+                .value((d, key) => d[key] || 0)(
+                    d3.rollups(countryData, v => Object.fromEntries(v.map(d => [d.variable, d.value])), d => d.year)
+                        .map(([year, values]) => ({ year, ...values }))
                 );
 
-                // Update x-axis
-                svg.selectAll(".x-axis").remove();
-                svg.append("g")
-                    .attr("class", "x-axis")
-                    .attr("transform", `translate(0,${height})`)
-                    .call(d3.axisBottom(x))
-                    .selectAll("text")
-                    .attr("transform", "rotate(-45)")
-                    .style("text-anchor", "end");
+            const x = d3.scaleBand()
+                .domain(years)
+                .range([0, chartWidth])
+                .padding(0.2);
 
-                // Update y-axis
-                svg.selectAll(".y-axis").remove();
-                svg.append("g")
-                    .attr("class", "y-axis")
-                    .call(d3.axisLeft(y));
-            }
-        });
-    </script>
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+                .nice()
+                .range([chartHeight, 0]);
+
+            const color = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(variables);
+
+            // Add bars
+            svg.append("g")
+                .selectAll("g")
+                .data(stackedData)
+                .enter().append("g")
+                .attr("fill", d => color(d.key))
+                .selectAll("rect")
+                .data(d => d)
+                .enter().append("rect")
+                .attr("x", d => x(d.data.year))
+                .attr("y", d => y(d[1]))
+                .attr("height", d => y(d[0]) - y(d[1]))
+                .attr("width", x.bandwidth());
+
+            svg.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0,${chartHeight})`)
+                .call(d3.axisBottom(x));
+
+            svg.append("g")
+                .attr("class", "y-axis")
+                .call(d3.axisLeft(y));
+
+            svg.append("text")
+                .attr("x", chartWidth / 2)
+                .attr("y", 0 - margin.top / 2)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .text(`Employment in ${countryName} Over Time`);
+
+            // Create Legend
+            const legend = d3.select("#legend")
+                .append("div")
+                .attr("class", "legend");
+
+            variables.forEach(variable => {
+                const legendItem = legend.append("div")
+                    .attr("class", "legend-item");
+
+                legendItem.append("div")
+                    .attr("class", "legend-color")
+                    .style("background-color", color(variable));
+
+                legendItem.append("div")
+                    .text(variable); // Display variable name
+            });
+        }
+    }).catch(error => {
+        console.error('Error loading or parsing data:', error);
+    });
+</script>
 </body>
 </html>
