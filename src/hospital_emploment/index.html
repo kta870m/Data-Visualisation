@@ -15,13 +15,11 @@
             position: absolute;
             text-align: center;
             width: auto;
-            height: auto;
             padding: 5px;
             font: 12px sans-serif;
-            background: lightsteelblue;
-            border: 0px;
-            border-radius: 8px;
+            border-radius: 5px;
             pointer-events: none;
+            opacity: 0;
         }
         h2 {
             text-align: center;
@@ -166,8 +164,15 @@
                 .nice()
                 .range([chartHeight, 0]);
 
-            const color = d3.scaleOrdinal(d3.schemeCategory10)
-                .domain(variables);
+                const color = {
+            "Associate nurses employed in hospitals": "#8dd3c7",
+            "Total hospital employment": "#ffffb3",
+            "Physicians employed in hospitals": "#bebada",
+            "Professional nurses and midwives employed in hospitals": "#fb8072",
+            "Healthcare assistants employed in hospitals": "#80b1d3",
+            "Other health service providers employed in hospitals": "#fdb462",
+            "Other staff employed in hospitals": "#b3de69"
+        };
 
             // Add bars
             svg.append("g")
@@ -184,7 +189,17 @@
                 .attr("y", k => y(k.value))
                 .attr("height", k => chartHeight -y(k.value))
                 .attr("width", x.bandwidth()/stackedData[0].data.length)
-                .attr("fill", d => color(d.variable));
+                .attr("fill", d => color[d.variable])
+                .on("mouseover", (event, d) => {
+                        tooltip.transition().duration(200).style("opacity", .8);
+                        tooltip.html(`<strong>${d.variable + " " + d.year}</strong><br>Value: ${d.value || "N/A"}`)
+                            .style("left", (event.pageX) + "px")
+                            .style("top", (event.pageY - 28) + "px")
+                            .style("background", color[d.variable]);
+                    })
+                    .on("mouseout", () => {
+                        tooltip.transition().duration(500).style("opacity", 0);
+                    });
 
             svg.append("g")
                 .attr("class", "x-axis")
@@ -213,7 +228,7 @@
 
                 legendItem.append("div")
                     .attr("class", "legend-color")
-                    .style("background-color", color(variable));
+                    .style("background-color", color[variable]);
 
                 legendItem.append("div")
                     .text(variable); // Display variable name
