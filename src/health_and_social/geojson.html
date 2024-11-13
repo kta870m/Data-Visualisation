@@ -24,17 +24,36 @@
             border-radius: 8px;
             pointer-events: none;
         }
+            .line{
+                fill:none;
+                stroke-width: 0.8;
+                stroke:#0a8dd9;
+            }
+            .area{
+                fill:gray;
+                stroke-width: 0.5;
+                stroke:gray;
+            }
     </style>
 </head>
 <body>
 
 <div id="globe"></div>
+<div id="chart"></div>
 
 <script>
+    const w = 800;
+        const h = 400;
+        const padding = 40;
+        var length = 0;
     const width = 960, height = 600;
     const svg = d3.select("#globe").append("svg")
         .attr("width", width)
         .attr("height", height);
+    const svg2 = d3.select("#chart")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
 
     const projection = d3.geoEquirectangular() // Changed to equirectangular projection
         .scale(160) // Adjust the scale as necessary
@@ -58,10 +77,19 @@
         geoData.features.map(d => d.properties = {iso_a3: d.properties.iso_a3, name: d.properties.name});
         console.log(geoData);
         const data = {};
+        const years = {};
         csvData.forEach(d => {
-            data[d.COU] = +d.Value; 
+            if(d.Measure == "Number of persons (head counts)"){
+                if(data[d.COU]){
+                    data[d.COU] += +d.Value; 
+                }
+                else{
+                    data[d.COU] = +d.Value; 
+                }
+            }
         });
-
+        csvData.map(d => { d.TIME_PERIOD = new Date(d.TIME_PERIOD, 0, 1); });
+        console.log(data);
         const colorScale = d3.scalePow()
             .exponent(0.4)
             .domain([0, Math.max(...Object.values(data))])
@@ -85,10 +113,135 @@
             })
             .on("mouseout", () => {
                 tooltip.transition().duration(500).style("opacity", 0);
+            })
+            .on("click", (event, d) => {
+                const countryData = data[d.properties.iso_a3];
+                if (countryData) {
+                    lineChart(d.properties.iso_a3, csvData);
+                }
             });
     }).catch(error => {
         console.error('Error loading or parsing data:', error);
     });
+
+    function lineChart(countryName, countryData) {
+    // Prepare the dataset by filtering and aggregating data
+    let dataset = [];
+    countryData.filter(d => d.COU == countryName && d.Measure == "Number of persons (head counts)").map(d => {
+        if (dataset.filter(e => e.TIME_PERIOD.getFullYear() == d.TIME_PERIOD.getFullYear()).length == 0) {
+            dataset.push(d);
+        } else {
+            dataset.map(f => {
+                if (f.TIME_PERIOD == d.TIME_PERIOD) {
+                    f.Value += +d.Value;
+                }
+            });
+        }
+    });
+    dataset.sort((a, b) => a.TIME_PERIOD - b.TIME_PERIOD);
+    length = dataset.length;
+
+    for(i = 0; i < 20; i++){
+        dataset.push(dataset[dataset.length - 1]);
+    }
+
+    // Convert TIME_PERIOD to Date object
+    //console.log(dataset);
+
+    // Define scales for x and y axes
+    var xScale = d3.scaleTime().domain([
+        d3.min(dataset, function(d) { return d.TIME_PERIOD; }),
+        d3.max(dataset, function(d) { return d.TIME_PERIOD; })
+    ]).range([padding, w - 5]);
+
+    var yScale = d3.scaleLinear().domain([
+        0,
+        d3.max(dataset, function(d) { return parseFloat(d.Value); })
+    ]).range([h - padding, padding]);
+
+    // Define line function
+    var line = d3.line()
+        .x(function(d, i) { return i >= length ? w + 100 : xScale(d.TIME_PERIOD); })
+        .y(function(d) { return yScale(parseFloat(d.Value)); });
+
+    var oldline = d3.line()
+    .x(w + 100)
+    .y(function(d) { return yScale(parseFloat(d.Value)); });
+
+    // Select the path element and bind the new dataset to it
+    var linePath = svg2.selectAll(".line")
+        .data([dataset]);  // Wrap the dataset in an array for proper data join
+
+    // If no path exists, create a new one
+    linePath.enter().append("path")
+        .attr("class", "line")
+        .attr("d", oldline)  // Set initial line
+        .attr("stroke", "#0a8dd9")
+        .attr("fill", "none")
+        .transition()
+        .duration(1000)  // Transition duration
+        .ease(d3.easeCubicOut)  // Easing function
+        .attr("d", line)  // Set initial line
+
+    // If the path already exists, update it (with smooth transition)
+    linePath
+    .transition()
+        .duration(1000)
+        .ease(d3.easeCubicOut)
+        .attr("d", line);  // Update path with new data
+
+
+    var points = svg2.selectAll("circle")
+    .data(dataset);
+    
+    points.enter().append("circle")
+        .attr("cx", w + 100)  // Start them off at the right side of the chart (x = w)
+        .attr("cy", d => yScale(parseFloat(d.Value)))  // Set the initial y position
+        .attr("r", 0)
+        .attr("fill", "#0a8dd9")
+        .merge(points)
+        .transition()
+        .duration(1000)  // Transition duration
+        .ease(d3.easeCubicOut)  // Easing function
+        .attr("cx", (d, i) => i >= length ? w + 100 : xScale(d.TIME_PERIOD))
+        .attr("cy", d => yScale(parseFloat(d.Value)))
+        .attr("r", 4); 
+
+        points.exit().remove();
+
+
+    // Transition the axes (ensure axes are updated or appended correctly)
+    var xAxis = d3.axisBottom().ticks(10).scale(xScale);
+    var yAxis = d3.axisLeft().ticks(10).scale(yScale);
+
+    // Select the x-axis and apply transition
+    var xAxisGroup = svg2.select(".x-axis");
+    if (xAxisGroup.empty()) {
+        xAxisGroup = svg2.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", "translate(0," + (h - padding) + ")");
+    }
+
+    xAxisGroup.transition()
+        .duration(1000)
+        .call(xAxis);
+
+    // Select the y-axis and apply transition
+    var yAxisGroup = svg2.select(".y-axis");
+    if (yAxisGroup.empty()) {
+        yAxisGroup = svg2.append("g")
+            .attr("class", "y-axis")
+            .attr("transform", "translate(" + padding + ", 0)");
+    }
+
+    yAxisGroup.transition()
+        .duration(1000)
+        .call(yAxis);
+}
+
+
+
+
 </script>
 
 </body>
