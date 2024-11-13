@@ -51,8 +51,8 @@
 <div id="globe"></div>
 
 <div id="container">
-    <div id="chart"></div> <!-- Div để hiển thị biểu đồ cột chồng -->
-    <div id="legend"></div> <!-- Div để hiển thị hướng dẫn -->
+    <div id="chart"></div> <!-- Div to display the grouped bar chart -->
+    <div id="legend"></div> <!-- Div to display the legend -->
 </div>
 
 <script>
@@ -72,7 +72,7 @@
         .style("opacity", 0);
 
     Promise.all([
-        d3.json("../map.json").catch(error => console.error("GeoJSON file not found:", error)), 
+        d3.json("../map.json").catch(error => console.error("GeoJSON file not found:", error)),
         d3.csv("../../data/result/hospital_employment.csv").catch(error => console.error("CSV file not found:", error))
     ]).then(([geoData, csvData]) => {
         if (!geoData || !csvData) {
@@ -82,7 +82,7 @@
 
         const data = {};
         csvData.forEach(d => {
-            if(d.Measure == "Number of persons (head counts)"){
+            if (d.Measure === "Number of persons (head counts)") {
                 if (!data[d.COU]) data[d.COU] = [];
                 data[d.COU].push({ year: d.TIME_PERIOD, value: +d.Value, variable: d.Variable });
             }
@@ -136,23 +136,11 @@
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
-            // Group data by year and stack by variable
             const years = Array.from(new Set(countryData.map(d => d.year)));
             const variables = Array.from(new Set(countryData.map(d => d.variable)));
 
-            // const stackedData = d3.stack()
-            //     .keys(variables)
-            //     .value((d, key) => d[key] || 0)(
-            //         d3.rollups(countryData, v => Object.fromEntries(v.map(d => [d.variable, d.value])), d => d.year, d => d.key)
-            //             .map(([year, values, key]) => ({ year, ...values ,key}))
-            //     );
-
-            console.log(countryData);
-            const stackedData = years.map(d => {return {year: d, data: countryData.filter(k => k.year == d)}}).sort((a,b) => a.year - b.year)
-            
-            const categories = stackedData.map(d => d.key);
-                
-            console.log(stackedData);
+            const stackedData = years.map(d => ({ year: d, data: countryData.filter(k => k.year == d) }))
+                                      .sort((a, b) => a.year - b.year);
 
             const x = d3.scaleBand()
                 .domain(stackedData.map(d => d.year))
@@ -164,17 +152,17 @@
                 .nice()
                 .range([chartHeight, 0]);
 
-                const color = {
-            "Associate nurses employed in hospitals": "#8dd3c7",
-            "Total hospital employment": "#ffffb3",
-            "Physicians employed in hospitals": "#bebada",
-            "Professional nurses and midwives employed in hospitals": "#fb8072",
-            "Healthcare assistants employed in hospitals": "#80b1d3",
-            "Other health service providers employed in hospitals": "#fdb462",
-            "Other staff employed in hospitals": "#b3de69"
-        };
+            const color = {
+                "Associate nurses employed in hospitals": "#8dd3c7",
+                "Total hospital employment": "#ffffb3",
+                "Physicians employed in hospitals": "#bebada",
+                "Professional nurses and midwives employed in hospitals": "#fb8072",
+                "Healthcare assistants employed in hospitals": "#80b1d3",
+                "Other health service providers employed in hospitals": "#fdb462",
+                "Other staff employed in hospitals": "#b3de69"
+            };
 
-            // Add bars
+            // Add bars with animation
             svg.append("g")
                 .selectAll("g")
                 .data(stackedData)
@@ -182,24 +170,15 @@
                 .selectAll("rect")
                 .data(k => k.data)
                 .enter().append("rect")
-                .attr("x", k => {
-                    console.log(k)
-                    return x(k.year) + variables.indexOf(k.variable) * x.bandwidth()/stackedData[0].data.length
-                })
-                .attr("y", k => y(k.value))
-                .attr("height", k => chartHeight -y(k.value))
-                .attr("width", x.bandwidth()/stackedData[0].data.length)
+                .attr("x", k => x(k.year) + variables.indexOf(k.variable) * x.bandwidth() / stackedData[0].data.length)
+                .attr("y", chartHeight)
+                .attr("height", 0)  // Start from height 0 for animation
+                .attr("width", x.bandwidth() / stackedData[0].data.length)
                 .attr("fill", d => color[d.variable])
-                .on("mouseover", (event, d) => {
-                        tooltip.transition().duration(200).style("opacity", .8);
-                        tooltip.html(`<strong>${d.variable + " " + d.year}</strong><br>Value: ${d.value || "N/A"}`)
-                            .style("left", (event.pageX) + "px")
-                            .style("top", (event.pageY - 28) + "px")
-                            .style("background", color[d.variable]);
-                    })
-                    .on("mouseout", () => {
-                        tooltip.transition().duration(500).style("opacity", 0);
-                    });
+                .transition() // Add transition for animation
+                .duration(1000)
+                .attr("y", k => y(k.value))
+                .attr("height", k => chartHeight - y(k.value));
 
             svg.append("g")
                 .attr("class", "x-axis")
@@ -231,7 +210,7 @@
                     .style("background-color", color[variable]);
 
                 legendItem.append("div")
-                    .text(variable); // Display variable name
+                    .text(variable);
             });
         }
     }).catch(error => {
