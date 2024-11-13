@@ -152,7 +152,7 @@
     var xScale = d3.scaleTime().domain([
         d3.min(dataset, function(d) { return d.TIME_PERIOD; }),
         d3.max(dataset, function(d) { return d.TIME_PERIOD; })
-    ]).range([padding, w - 5]);
+    ]).range([padding, w - 10]);
 
     var yScale = d3.scaleLinear().domain([
         0,
@@ -224,7 +224,10 @@
 
     xAxisGroup.transition()
         .duration(1000)
-        .call(xAxis);
+        .call(xAxis)
+        .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");
 
     // Select the y-axis and apply transition
     var yAxisGroup = svg2.select(".y-axis");
