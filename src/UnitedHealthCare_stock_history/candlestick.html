@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title>NVIDIA Stock</title>
-        <meta charset="utf-8">
-        <meta name="language" content="english">
-        <meta name="keywords" content="NVIDIA, Stock, Candlestick Chart">
-        <meta name="description" content="Stock candlestick chart for NVIDIA using D3.js">
-        <script src="https://d3js.org/d3.v7.min.js"></script>
-        <style>
-            .line {
-                fill: none;
-                stroke-width: 2;
-            }
-            .tooltip {
+
+<head>
+    <title>NVIDIA Stock</title>
+    <meta charset="utf-8">
+    <meta name="language" content="english">
+    <meta name="keywords" content="NVIDIA, Stock, Candlestick Chart">
+    <meta name="description" content="Stock candlestick chart for NVIDIA using D3.js">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .line {
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .tooltip {
             position: absolute;
             text-align: center;
             width: auto;
@@ -22,169 +24,261 @@
             pointer-events: none;
             opacity: 0;
         }
-        </style>
-    </head>
-    <body>
-        <h1>United Healthcare stock</h1>
-        <label for="unit-select">By:</label>
-        <select id="unit-select">
-            <option value="day">Days</option>
-            <option value="month">Month</option>
-            <option value="year">Years</option>
-        </select>
-        <div id="chart"></div>
-        <script>
-            const w = 1000;
-            const h = 600;
-            const padding = 50;
-            var data;
-            var displayData;
 
-            const tooltip = d3.select("body").append("div")
+        #volume-chart {
+            margin-left: 30px
+        }
+    </style>
+</head>
+
+<body>
+    <h1>United Healthcare stock</h1>
+    <label for="unit-select">By:</label>
+    <select id="unit-select">
+        <option value="day">Days</option>
+        <option value="month">Month</option>
+        <option value="year">Years</option>
+    </select>
+    <div id="chart"></div>
+    <div id="volume-chart"></div>
+    <script>
+        const w = 1000;
+        const h = 600;
+        const padding = 50;
+        var data;
+        var displayData;
+
+        const tooltip = d3.select("body").append("div")
             .attr("class", "tooltip")
             .style("opacity", 0);
 
-            
-            const unitSelect = d3.select("#unit-select");
-            unitSelect.on("change", function() {
-                var latest = d3.max(data,d => d.Date);
-                if(this.value == "year"){
-                    displayData = [];
-                    const max = latest.getFullYear();
-                    for(i = max - 35; i <= max; i++){
-                        displayData.push({
-                            Date: i,
-                            Open: data.filter(d => d.Date.getFullYear() == i).sort((a,b) => a.Date - b.Date)[0].Open,
-                            Close: data.filter(d => d.Date.getFullYear() == i).sort((a,b) => b.Date -a.Date)[0].Close,
-                            High: d3.max(data.filter(d => d.Date.getFullYear() == i), d => d.High),
-                            Low: d3.min(data.filter(d => d.Date.getFullYear() == i), d => d.Low) 
-                        });
-                    }
-                }
-                else if(this.value == "month"){
-                    displayData = [];
-                    latest.setMonth(latest.getMonth() - 36);
-                    //console.log(latest);
-                    for(i = -35; i <= 0; i++){
-                        latest.setMonth(latest.getMonth() + 1);
-                        console.log(latest);
-                        const formattedDate = latest.toLocaleString('en-US', { 
-                            month: 'short',  // Abbreviated month (e.g., 'Jan', 'Feb')
-                            year: 'numeric'  // Full year (e.g., '2022', '2023')
-                        });
-                        let filtered = data.filter(d => d.Date.getFullYear() == latest.getFullYear() && d.Date.getMonth() == latest.getMonth());
-                        filtered.pop();
-                        console.log(filtered);
-                        displayData.push({
-                            Date: formattedDate,
-                            Open: filtered.sort((a,b) => a.Date - b.Date)[0].Open,
-                            Close: filtered.sort((a,b) => b.Date -a.Date)[0].Close,
-                            High: d3.max(filtered, d => d.High),
-                            Low: d3.min(filtered, d => d.Low)
-                        });
-                    }
-                }
-                else if(this.value == "day"){
-                    displayData = data.slice(-36).map(d => ({ ...d }));
-                    displayData.map(d => d.Date = d.Date.toLocaleString('en-US', { month: 'short', day: 'numeric' }));
-                }
-                console.log(displayData);
-                candlestickChart(displayData);
-            });
 
-            const svg = d3.select("#chart")
-                .append("svg")
-                .attr("width", w)
-                .attr("height", h);
-
-            d3.csv("../../data/result/UnitedHealthCare_stock_history.csv").then(function(result) {
-                data = result;
-                data.map(d => {d.Date = new Date(d.Date)});
+        const unitSelect = d3.select("#unit-select");
+        unitSelect.on("change", function () {
+            var latest = d3.max(data, d => d.Date);
+            if (this.value == "year") {
+                displayData = [];
+                const max = latest.getFullYear();
+                for (i = max - 35; i <= max; i++) {
+                    displayData.push({
+                        Date: i,
+                        Open: data.filter(d => d.Date.getFullYear() == i).sort((a, b) => a.Date - b.Date)[0].Open,
+                        Close: data.filter(d => d.Date.getFullYear() == i).sort((a, b) => b.Date - a.Date)[0].Close,
+                        High: d3.max(data.filter(d => d.Date.getFullYear() == i), d => d.High),
+                        Low: d3.min(data.filter(d => d.Date.getFullYear() == i), d => d.Low),
+                        Volume: d3.sum(data.filter(d => d.Date.getFullYear() == i), d => d.Volume)
+                    });
+                }
+            }
+            else if (this.value == "month") {
+                displayData = [];
+                latest.setMonth(latest.getMonth() - 36);
+                //console.log(latest);
+                for (i = -35; i <= 0; i++) {
+                    latest.setMonth(latest.getMonth() + 1);
+                    console.log(latest);
+                    const formattedDate = latest.toLocaleString('en-US', {
+                        month: 'short',  // Abbreviated month (e.g., 'Jan', 'Feb')
+                        year: 'numeric'  // Full year (e.g., '2022', '2023')
+                    });
+                    let filtered = data.filter(d => d.Date.getFullYear() == latest.getFullYear() && d.Date.getMonth() == latest.getMonth());
+                    filtered.pop();
+                    console.log(filtered);
+                    displayData.push({
+                        Date: formattedDate,
+                        Open: filtered.sort((a, b) => a.Date - b.Date)[0].Open,
+                        Close: filtered.sort((a, b) => b.Date - a.Date)[0].Close,
+                        High: d3.max(filtered, d => d.High),
+                        Low: d3.min(filtered, d => d.Low),
+                        Volume: d3.sum(filtered, d => d.Volume)
+                    });
+                }
+            }
+            else if (this.value == "day") {
                 displayData = data.slice(-36).map(d => ({ ...d }));
                 displayData.map(d => d.Date = d.Date.toLocaleString('en-US', { month: 'short', day: 'numeric' }));
-                console.log(data);
-                candlestickChart(displayData);
-                
-            });
-
-            function candlestickChart(dataset){
-                const xScale = d3.scaleBand()
-                    .domain(dataset.map(d => d.Date))
-                    .range([padding, w - padding])
-                    .padding(0.2);
-                console.log(d3.min(dataset, d => d.Low));
-                const yScale = d3.scaleLinear()
-                    .domain([d3.min(dataset, d => parseFloat(d.Low)), d3.max(dataset, d => parseFloat(d.High))])
-                    .range([h - padding, padding]);
-
-                const lines = svg.selectAll("line")
-                    .data(dataset);
-
-                lines.enter()
-                    .append("line")
-                    .attr("class", "line")
-                    .attr("x1", d => xScale(d.Date) + xScale.bandwidth() / 2)
-                    .attr("x2", d => xScale(d.Date) + xScale.bandwidth() / 2)
-                    .merge(lines)  // Merge the newly entered and existing elements
-                    .transition()
-                    .duration(1000)
-                    .attr("x1", d => xScale(d.Date) + xScale.bandwidth() / 2)
-                    .attr("x2", d => xScale(d.Date) + xScale.bandwidth() / 2)
-                    .attr("y1", d => yScale(d.High))
-                    .attr("y2", d => yScale(d.Low))
-                    .attr("stroke", d => d.Open < d.Close ? "#9acc45" : "#f35644");
-
-                lines.exit().remove(); // Remove any old lines that are no longer in the data
-
-                // Update the rectangles (candlestick bodies)
-                const rects = svg.selectAll("rect")
-                    .data(dataset);
-
-                rects.enter()
-                    .append("rect")
-                    .attr("x", d => xScale(d.Date))
-                    .attr("width", xScale.bandwidth())
-                    .on("mouseover", (event, d) => {
-                        tooltip.transition().duration(200).style("opacity", .8);
-                        tooltip.html(`<strong>${d.Date}</strong><br>Open: ${Math.round(d.Open * 100) / 100 || "N/A"}<br>Close: ${Math.round(d.Close * 100) / 100 || "N/A"}<br>High: ${Math.round(d.High * 100) / 100 || "N/A"}<br>Low: ${Math.round(d.Low * 100) / 100 || "N/A"}`)
-                            .style("left", (event.pageX) + "px")
-                            .style("top", (event.pageY - 28) + "px")
-                            .style("background", d.Open < d.Close ? "#9acc45" : "#f35644");
-                    })
-                    .on("mouseout", () => {
-                        tooltip.transition().duration(500).style("opacity", 0);
-                    })
-                    .merge(rects)  // Merge the newly entered and existing elements
-                    .transition()
-                    .duration(1000)
-                    .attr("x", d => xScale(d.Date))
-                    .attr("y", d => yScale(Math.max(d.Open, d.Close)))
-                    .attr("width", xScale.bandwidth())
-                    .attr("height", d => Math.abs(yScale(d.Open) - yScale(d.Close)))
-                    .attr("fill", d => d.Open < d.Close ? "#9acc45" : "#f35644");
-
-                rects.exit().remove();
-
-                svg.selectAll(".x-axis").remove();
-                svg.selectAll(".y-axis").remove();
-
-                const xAxis = d3.axisBottom(xScale);
-
-                const yAxis = d3.axisLeft(yScale);
-
-                svg.append("g")
-                    .attr("transform", `translate(0, ${h - padding})`)
-                    .attr("class", "x-axis")
-                    .call(xAxis)
-                    .selectAll("text")
-                    .attr("transform", "rotate(-45)")
-                    .style("text-anchor", "end");
-
-                svg.append("g")
-                    .attr("transform", `translate(${padding}, 0)`)
-                    .attr("class", "y-axis")
-                    .call(yAxis);
             }
-        </script>
-    </body>
+            console.log(displayData);
+            candlestickChart(displayData);
+            renderVolumeChart(displayData);
+        });
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+
+        d3.csv("../../data/result/UnitedHealthCare_stock_history.csv").then(function (result) {
+            data = result;
+            data.map(d => { d.Date = new Date(d.Date) });
+            displayData = data.slice(-36).map(d => ({ ...d }));
+            displayData.map(d => d.Date = d.Date.toLocaleString('en-US', { month: 'short', day: 'numeric' }));
+            console.log(data);
+            candlestickChart(displayData);
+            renderVolumeChart(displayData);
+        });
+
+        function renderVolumeChart(dataset) {
+            const width = 1000;
+            const height = 300;
+            const padding = 50;
+
+            // Create or select SVG
+            let svg = d3.select("#volume-chart").select("svg");
+            if (svg.empty()) {
+                svg = d3.select("#volume-chart")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+            }
+
+            // Define scales
+            const xScale = d3.scaleBand()
+                .domain(dataset.map(d => d.Date))
+                .range([padding, width - padding])
+                .padding(0.2);
+
+            const yScaleVolume = d3.scaleLinear()
+                .domain([0, d3.max(dataset, d => parseFloat(d.Volume))])
+                .range([height - padding, padding]);
+
+            // Define area generator
+            const areaGenerator = d3.area()
+                .x(d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .y0(height - padding)
+                .y1(d => yScaleVolume(d.Volume))
+                .curve(d3.curveMonotoneX);
+
+            // Bind data to path and apply transition
+            const path = svg.selectAll("path.area").data([dataset]);
+
+            // Update existing path
+            path.transition()
+                .duration(1000)
+                .attr("d", areaGenerator);
+
+            // Enter new path if not exists
+            path.enter()
+                .append("path")
+                .attr("class", "area")
+                .attr("fill", "lightblue")
+                .attr("d", areaGenerator)
+                .attr("opacity", 0)
+                .transition()
+                .duration(1000)
+                .attr("opacity", 1);
+
+            // Add and animate axes
+            const xAxis = d3.axisBottom(xScale);
+            const yAxisVolume = d3.axisLeft(yScaleVolume);
+
+            // Update x-axis with animation
+            const xAxisGroup = svg.selectAll(".x-axis").data([0]);
+            xAxisGroup.enter()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0, ${height - padding})`)
+                .merge(xAxisGroup)
+                .transition()
+                .duration(1000)
+                .call(xAxis)
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
+
+            // Update y-axis with animation
+            const yAxisGroup = svg.selectAll(".y-axis").data([0]);
+            yAxisGroup.enter()
+                .append("g")
+                .attr("class", "y-axis")
+                .attr("transform", `translate(${padding}, 0)`)
+                .merge(yAxisGroup)
+                .transition()
+                .duration(1000)
+                .call(yAxisVolume);
+        }
+
+
+        function candlestickChart(dataset) {
+            const xScale = d3.scaleBand()
+                .domain(dataset.map(d => d.Date))
+                .range([padding, w - padding])
+                .padding(0.2);
+            console.log(d3.min(dataset, d => d.Low));
+            const yScale = d3.scaleLinear()
+                .domain([d3.min(dataset, d => parseFloat(d.Low)), d3.max(dataset, d => parseFloat(d.High))])
+                .range([h - padding, padding]);
+
+            const lines = svg.selectAll("line")
+                .data(dataset);
+
+            lines.enter()
+                .append("line")
+                .attr("class", "line")
+                .attr("x1", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .attr("x2", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .merge(lines)  // Merge the newly entered and existing elements
+                .transition()
+                .duration(1000)
+                .attr("x1", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .attr("x2", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .attr("y1", d => yScale(d.High))
+                .attr("y2", d => yScale(d.Low))
+                .attr("stroke", d => d.Open < d.Close ? "#9acc45" : "#f35644");
+
+            lines.exit().remove(); // Remove any old lines that are no longer in the data
+
+            // Update the rectangles (candlestick bodies)
+            const rects = svg.selectAll("rect")
+                .data(dataset);
+
+            rects.enter()
+                .append("rect")
+                .attr("x", d => xScale(d.Date))
+                .attr("width", xScale.bandwidth())
+                .on("mouseover", (event, d) => {
+                    tooltip.transition().duration(200).style("opacity", .8);
+                    tooltip.html(`<strong>${d.Date}</strong><br>Open: ${Math.round(d.Open * 100) / 100 || "N/A"}<br>Close: ${Math.round(d.Close * 100) / 100 || "N/A"}<br>High: ${Math.round(d.High * 100) / 100 || "N/A"}<br>Low: ${Math.round(d.Low * 100) / 100 || "N/A"}`)
+                        .style("left", (event.pageX) + "px")
+                        .style("top", (event.pageY - 28) + "px")
+                        .style("background", d.Open < d.Close ? "#9acc45" : "#f35644");
+                })
+                .on("mouseout", () => {
+                    tooltip.transition().duration(500).style("opacity", 0);
+                })
+                .merge(rects)  // Merge the newly entered and existing elements
+                .transition()
+                .duration(1000)
+                .attr("x", d => xScale(d.Date))
+                .attr("y", d => yScale(Math.max(d.Open, d.Close)))
+                .attr("width", xScale.bandwidth())
+                .attr("height", d => Math.abs(yScale(d.Open) - yScale(d.Close)))
+                .attr("fill", d => d.Open < d.Close ? "#9acc45" : "#f35644");
+
+            rects.exit().remove();
+
+            svg.selectAll(".x-axis").remove();
+            svg.selectAll(".y-axis").remove();
+
+            const xAxis = d3.axisBottom(xScale);
+
+            const yAxis = d3.axisLeft(yScale);
+
+            svg.append("g")
+                .attr("transform", `translate(0, ${h - padding})`)
+                .attr("class", "x-axis")
+                .call(xAxis)
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
+
+            svg.append("g")
+                .attr("transform", `translate(${padding}, 0)`)
+                .attr("class", "y-axis")
+                .call(yAxis);
+        }
+
+    </script>
+</body>
+
 </html>
