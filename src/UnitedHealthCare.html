@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Clean Blog - Start Bootstrap Theme</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Font Awesome icons (free version)-->
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- Google fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet"
+        type="text/css" />
+    <link
+        href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800"
+        rel="stylesheet" type="text/css" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<style>
+    .line {
+        fill: none;
+        stroke-width: 2;
+    }
+
+    .tooltip {
+        position: absolute;
+        text-align: center;
+        width: auto;
+        padding: 5px;
+        font: 12px sans-serif;
+        border-radius: 5px;
+        pointer-events: none;
+        opacity: 0;
+    }
+
+    #volume-chart {
+        margin-left: 30px
+    }
+
+    .volume {
+        margin-top: 10px;
+    }
+</style>
+
+<body>
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="index.html">Group 7</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="health.html">Health And
+                            Social</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="hosiptal.html">Hospital
+                            Employment</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4"
+                            href="UnitedHealthCare.html">UnitedHealthCare</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Page Header-->
+    <header class="masthead" style="background-image: url('assets/img/united.jpg')">
+        <div class="container position-relative px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center">
+                <div class="col-md-10 col-lg-8 col-xl-7">
+                    <div class="page-heading">
+                        <h1>UnitedHealthCare Stock History</h1>
+                        <span class="subheading">This visualization highlights the historical stock performance of
+                            UnitedHealthcare, a leading name in healthcare services.
+                            By analyzing stock trends, we gain insights into how market sentiments, company performance,
+                            and industry dynamics influence its value..</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main Content-->
+    <main class="mb-4">
+        <div class="container px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center">
+                <p class="subheading">This candlestick chart provides a detailed view of the daily, monthly, or yearly
+                    stock trends. Represents market open, close, high, and low values for each period, offering insights
+                    into price fluctuations.</p>
+                <label for="unit-select">By:</label>
+                <select id="unit-select">
+                    <option value="day">Days</option>
+                    <option value="month">Month</option>
+                    <option value="year">Years</option>
+                </select>
+                <div id="chart"></div>
+                <div class="volume">
+                    <p class="subheading">This area chart displays the trading volume, indicating investor activity and
+                        market interest. Highlighting the periods of significant buying or selling, correlating them
+                        with price movements.</p>
+                    <div id="volume-chart"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="text/javascript">
+        const w = 1000;
+        const h = 600;
+        const padding = 50;
+        var data;
+        var displayData;
+
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+
+        const unitSelect = d3.select("#unit-select");
+        unitSelect.on("change", function () {
+            var latest = d3.max(data, d => d.Date);
+            if (this.value == "year") {
+                displayData = [];
+                const max = latest.getFullYear();
+                for (i = max - 35; i <= max; i++) {
+                    displayData.push({
+                        Date: i,
+                        Open: data.filter(d => d.Date.getFullYear() == i).sort((a, b) => a.Date - b.Date)[0].Open,
+                        Close: data.filter(d => d.Date.getFullYear() == i).sort((a, b) => b.Date - a.Date)[0].Close,
+                        High: d3.max(data.filter(d => d.Date.getFullYear() == i), d => d.High),
+                        Low: d3.min(data.filter(d => d.Date.getFullYear() == i), d => d.Low),
+                        Volume: d3.sum(data.filter(d => d.Date.getFullYear() == i), d => d.Volume)
+                    });
+                }
+            }
+            else if (this.value == "month") {
+                displayData = [];
+                latest.setMonth(latest.getMonth() - 36);
+                //console.log(latest);
+                for (i = -35; i <= 0; i++) {
+                    latest.setMonth(latest.getMonth() + 1);
+                    console.log(latest);
+                    const formattedDate = latest.toLocaleString('en-US', {
+                        month: 'short',  // Abbreviated month (e.g., 'Jan', 'Feb')
+                        year: 'numeric'  // Full year (e.g., '2022', '2023')
+                    });
+                    let filtered = data.filter(d => d.Date.getFullYear() == latest.getFullYear() && d.Date.getMonth() == latest.getMonth());
+                    filtered.pop();
+                    console.log(filtered);
+                    displayData.push({
+                        Date: formattedDate,
+                        Open: filtered.sort((a, b) => a.Date - b.Date)[0].Open,
+                        Close: filtered.sort((a, b) => b.Date - a.Date)[0].Close,
+                        High: d3.max(filtered, d => d.High),
+                        Low: d3.min(filtered, d => d.Low),
+                        Volume: d3.sum(filtered, d => d.Volume)
+                    });
+                }
+            }
+            else if (this.value == "day") {
+                displayData = data.slice(-36).map(d => ({ ...d }));
+                displayData.map(d => d.Date = d.Date.toLocaleString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            console.log(displayData);
+            candlestickChart(displayData);
+            renderVolumeChart(displayData);
+        });
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+
+        d3.csv("../../data/result/UnitedHealthCare_stock_history.csv").then(function (result) {
+            data = result;
+            data.map(d => { d.Date = new Date(d.Date) });
+            displayData = data.slice(-36).map(d => ({ ...d }));
+            displayData.map(d => d.Date = d.Date.toLocaleString('en-US', { month: 'short', day: 'numeric' }));
+            console.log(data);
+            candlestickChart(displayData);
+            renderVolumeChart(displayData);
+        });
+
+        function renderVolumeChart(dataset) {
+            const width = 1000;
+            const height = 500;
+            const padding = 100;
+
+            // Create or select SVG
+            let svg = d3.select("#volume-chart").select("svg");
+            if (svg.empty()) {
+                svg = d3.select("#volume-chart")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+            }
+
+            // Define scales
+            const xScale = d3.scaleBand()
+                .domain(dataset.map(d => d.Date))
+                .range([padding, width - padding])
+                .padding(0.2);
+
+            const yScaleVolume = d3.scaleLinear()
+                .domain([0, d3.max(dataset, d => parseFloat(d.Volume))])
+                .range([height - padding, padding]);
+
+            // Define area generator
+            const areaGenerator = d3.area()
+                .x(d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .y0(() => yScaleVolume(0)) // Set baseline to the bottom of the chart
+                .y1(d => yScaleVolume(d.Volume))
+                .curve(d3.curveMonotoneX);
+
+            // Bind data to path and apply transition
+            const path = svg.selectAll("path.area").data([dataset]);
+
+            // Update existing path
+            path.transition()
+                .duration(1000)
+                .attr("d", areaGenerator);
+
+            // Enter new path if not exists
+            path.enter()
+                .append("path")
+                .attr("class", "area")
+                .attr("fill", "lightblue")
+                .attr("d", areaGenerator)
+                .attr("opacity", 0)
+                .transition()
+                .duration(1000)
+                .attr("opacity", 1);
+
+            // Add and animate axes
+            const xAxis = d3.axisBottom(xScale);
+            const yAxisVolume = d3.axisLeft(yScaleVolume);
+
+            // Update x-axis with animation
+            const xAxisGroup = svg.selectAll(".x-axis").data([0]);
+            xAxisGroup.enter()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0, ${height - padding})`)
+                .merge(xAxisGroup)
+                .transition()
+                .duration(1000)
+                .call(xAxis)
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
+
+            // Update y-axis with animation
+            const yAxisGroup = svg.selectAll(".y-axis").data([0]);
+            yAxisGroup.enter()
+                .append("g")
+                .attr("class", "y-axis")
+                .attr("transform", `translate(${padding}, 0)`)
+                .merge(yAxisGroup)
+                .transition()
+                .duration(1000)
+                .call(yAxisVolume);
+        }
+
+
+        function candlestickChart(dataset) {
+            const xScale = d3.scaleBand()
+                .domain(dataset.map(d => d.Date))
+                .range([padding, w - padding])
+                .padding(0.2);
+            console.log(d3.min(dataset, d => d.Low));
+            const yScale = d3.scaleLinear()
+                .domain([d3.min(dataset, d => parseFloat(d.Low)), d3.max(dataset, d => parseFloat(d.High))])
+                .range([h - padding, padding]);
+
+            const lines = svg.selectAll("line")
+                .data(dataset);
+
+            lines.enter()
+                .append("line")
+                .attr("class", "line")
+                .attr("x1", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .attr("x2", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .merge(lines)  // Merge the newly entered and existing elements
+                .transition()
+                .duration(1000)
+                .attr("x1", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .attr("x2", d => xScale(d.Date) + xScale.bandwidth() / 2)
+                .attr("y1", d => yScale(d.High))
+                .attr("y2", d => yScale(d.Low))
+                .attr("stroke", d => d.Open < d.Close ? "#9acc45" : "#f35644");
+
+            lines.exit().remove();                                                                                                                                      
+
+         
+            const rects = svg.selectAll("rect")
+                .data(dataset);
+
+            rects.enter()
+                .append("rect")
+                .attr("x", d => xScale(d.Date))
+                .attr("width", xScale.bandwidth())
+                .on("mouseover", (event, d) => {
+                    tooltip.transition().duration(200).style("opacity", .8);
+                    tooltip.html(`<strong>${d.Date}</strong><br>Open: ${Math.round(d.Open * 100) / 100 || "N/A"}<br>Close: ${Math.round(d.Close * 100) / 100 || "N/A"}<br>High: ${Math.round(d.High * 100) / 100 || "N/A"}<br>Low: ${Math.round(d.Low * 100) / 100 || "N/A"}`)
+                        .style("left", (event.pageX) + "px")
+                        .style("top", (event.pageY - 28) + "px")
+                        .style("background", d.Open < d.Close ? "#9acc45" : "#f35644");
+                })
+                .on("mouseout", () => {
+                    tooltip.transition().duration(500).style("opacity", 0);
+                })
+                .merge(rects)  // Merge the newly entered and existing elements
+                .transition()
+                .duration(1000)
+                .attr("x", d => xScale(d.Date))
+                .attr("y", d => yScale(Math.max(d.Open, d.Close)))
+                .attr("width", xScale.bandwidth())
+                .attr("height", d => Math.abs(yScale(d.Open) - yScale(d.Close)))
+                .attr("fill", d => d.Open < d.Close ? "#9acc45" : "#f35644");
+
+            rects.exit().remove();
+
+            svg.selectAll(".x-axis").remove();
+            svg.selectAll(".y-axis").remove();
+
+            const xAxis = d3.axisBottom(xScale);
+
+            const yAxis = d3.axisLeft(yScale);
+
+            svg.append("g")
+                .attr("transform", `translate(0, ${h - padding})`)
+                .attr("class", "x-axis")
+                .call(xAxis)
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end");
+
+            svg.append("g")
+                .attr("transform", `translate(${padding}, 0)`)
+                .attr("class", "y-axis")
+                .call(yAxis);
+        }
+
+    </script>
+    <!-- Footer-->
+    <footer class="border-top">
+        <div class="container px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center">
+                <div class="col-md-10 col-lg-8 col-xl-7">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#!">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#!">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-facebook-f fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#!">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="small text-center text-muted fst-italic">Copyright &copy; Group 7</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

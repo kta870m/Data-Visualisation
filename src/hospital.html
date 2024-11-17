@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Clean Blog - Start Bootstrap Theme</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Font Awesome icons (free version)-->
+    <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- Google fonts-->
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet"
+        type="text/css" />
+    <link
+        href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800"
+        rel="stylesheet" type="text/css" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<style>
+    .country {
+        stroke: #fff;
+        stroke-width: 0.3;
+        cursor: pointer;
+    }
+
+    .tooltip {
+        position: absolute;
+        text-align: center;
+        width: auto;
+        height: auto;
+        padding: 5px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+        opacity: 0;
+    }
+
+    h2 {
+        text-align: center;
+        font-size: 24px;
+        margin-top: 20px;
+    }
+
+    #container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    #chart,
+    #pie {
+        margin: 20px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        margin-right: 5px;
+    }
+
+    .flx-chart {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .explain {
+        margin-top: 20px
+    }
+</style>
+
+<body>
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+        <div class="container px-4 px-lg-5">
+            <a class="navbar-brand" href="index.html">Group 7</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="health.html">Health And
+                            Social</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="hosiptal.html">Hospital
+                            Employment</a></li>
+                    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4"
+                            href="UnitedHealthCare.html">UnitedHealthCare</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Page Header-->
+    <header class="masthead" style="background-image: url('assets/img/hospital.jpg')">
+        <div class="container position-relative px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center">
+                <div class="col-md-10 col-lg-8 col-xl-7">
+                    <div class="page-heading">
+                        <h1>Hospital Employment</h1>
+                        <span class="subheading">This visualization explores how hospital employment varies across
+                            countries,
+                            reflecting the dynamics of healthcare systems worldwide.
+                            By examining the workforce, including roles such as physicians, nurses,
+                            and healthcare assistants, we can gain insights into how nations allocate resources to meet
+                            public health demands.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main Content-->
+    <main class="mb-4">
+        <div class="container px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center" id="txt-chart">
+                <p class="subheading">
+                    The world map allows you to interactively select a country and see its workforce distribution.
+                    Clicking on a country reveals
+                    the grouped bar chart and the pie chart of the specific country
+                </p>
+                <div id="globe"></div>
+                <div class="flx-chart">
+                    <div id="chart"></div>
+                    <div id="pie"></div>
+                </div>
+                <div id="legend"></div>
+                <div class="explain">
+                    <p class="subheading">
+                        <strong>Grouped Barchart:</strong> Displays changes over time in various employment categories,
+                        such as professional nurses and other staff.
+                    </p>
+
+                    <p class="subheading">
+                        <strong>Pie Chart:</strong> Illustrates the current composition of the workforce, highlighting
+                        the proportion of different roles.
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="text/javascript">
+        const width = 1260, height = 700;
+        const svg = d3.select("#globe").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const projection = d3.geoEquirectangular()
+            .scale(200)
+            .translate([width / 2, height / 2]);
+
+        const path = d3.geoPath().projection(projection);
+
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        Promise.all([
+            d3.json("map.json").catch(error => console.error("GeoJSON file not found:", error)),
+            d3.csv("../data/result/hospital_employment.csv").catch(error => console.error("CSV file not found:", error))
+        ]).then(([geoData, csvData]) => {
+            if (!geoData || !csvData) {
+                console.error("Data loading failed.");
+                return;
+            }
+
+            const data = {};
+            csvData.forEach(d => {
+                if (d.Measure === "Number of persons (head counts)") {
+                    if (!data[d.COU]) data[d.COU] = [];
+                    data[d.COU].push({ year: d.TIME_PERIOD, value: +d.Value, variable: d.Variable });
+                }
+            });
+
+            const colorScale = d3.scalePow()
+                .exponent(0.4)
+                .domain([0, d3.max(csvData, d => +d.Value)])
+                .range(["#ffffff", "#0a8dd9"]);
+
+            svg.selectAll("path")
+                .data(geoData.features)
+                .enter().append("path")
+                .attr("class", "country")
+                .attr("fill", d => {
+                    const value = data[d.properties.iso_a3] ? data[d.properties.iso_a3][0].value : null;
+                    return value ? colorScale(value) : "#ccc";
+                })
+                .attr("d", path)
+                .on("mouseover", (event, d) => {
+                    const countryData = data[d.properties.iso_a3];
+                    const value = countryData ? countryData.reduce((acc, curr) => acc + curr.value, 0) : "N/A";
+                    tooltip.transition().duration(200).style("opacity", .9);
+                    tooltip.html(`<strong>${d.properties.name}</strong><br>Employment: ${value}`)
+                        .style("left", `${event.pageX}px`)
+                        .style("top", `${event.pageY - 28}px`);
+                })
+                .on("mouseout", () => {
+                    tooltip.transition().duration(500).style("opacity", 0);
+                })
+                .on("click", (event, d) => {
+                    const countryData = data[d.properties.iso_a3];
+                    if (countryData) {
+                        showStackedBarChart(d.properties.name, countryData);
+                        showPieChart(d.properties.name, countryData);
+
+                        const chartSection = document.querySelector(".flx-chart");
+                        if (chartSection) {
+                            chartSection.scrollIntoView({ behavior: "smooth" });
+                        }
+                    }
+                });
+
+            function showStackedBarChart(countryName, countryData) {
+                // Clear previous chart and legend
+                d3.select("#chart").html("");
+                d3.select("#legend").html("");
+
+                const margin = { top: 30, right: 30, bottom: 40, left: 60 },
+                    chartWidth = 500 - margin.left - margin.right,
+                    chartHeight = 300 - margin.top - margin.bottom;
+
+                const svg = d3.select("#chart").append("svg")
+                    .attr("width", chartWidth + margin.left + margin.right)
+                    .attr("height", chartHeight + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                const years = Array.from(new Set(countryData.map(d => d.year)));
+                const variables = Array.from(new Set(countryData.map(d => d.variable)));
+
+                const stackedData = years.map(d => ({ year: d, data: countryData.filter(k => k.year == d) }))
+                    .sort((a, b) => a.year - b.year);
+
+                const x = d3.scaleBand()
+                    .domain(stackedData.map(d => d.year))
+                    .range([0, chartWidth])
+                    .padding(0.2);
+
+                const y = d3.scaleLinear()
+                    .domain([0, d3.max(stackedData, d => d3.max(d.data, k => k.value))])
+                    .nice()
+                    .range([chartHeight, 0]);
+
+                const color = {
+                    "Associate nurses employed in hospitals": "#8dd3c7",
+                    "Total hospital employment": "#ffffb3",
+                    "Physicians employed in hospitals": "#bebada",
+                    "Professional nurses and midwives employed in hospitals": "#fb8072",
+                    "Healthcare assistants employed in hospitals": "#80b1d3",
+                    "Other health service providers employed in hospitals": "#fdb462",
+                    "Other staff employed in hospitals": "#b3de69"
+                };
+
+                // Add bars with animation
+                svg.append("g")
+                    .selectAll("g")
+                    .data(stackedData)
+                    .enter().append("g")
+                    .selectAll("rect")
+                    .data(k => k.data)
+                    .enter().append("rect")
+                    .attr("x", k => x(k.year) + variables.indexOf(k.variable) * x.bandwidth() / stackedData[0].data.length)
+                    .attr("y", chartHeight)
+                    .attr("height", 0)  // Start from height 0 for animation
+                    .attr("width", x.bandwidth() / stackedData[0].data.length)
+                    .attr("fill", d => color[d.variable])
+                    .on("mouseover", (event, d) => {
+                        tooltip.transition().duration(200).style("opacity", .9);
+                        tooltip.html(`<strong>${d.variable + " " + d.year}</strong><br>Head Count: ${d.value}`)
+                            .style("left", `${event.pageX}px`)
+                            .style("top", `${event.pageY - 28}px`)
+                            .style("background", color[d.variable]);
+                    })
+                    .on("mouseout", () => {
+                        tooltip.transition().duration(500).style("opacity", 0);
+                    })
+                    .transition() // Add transition for animation
+                    .duration(1000)
+                    .attr("y", k => y(k.value))
+                    .attr("height", k => chartHeight - y(k.value));
+
+                svg.append("g")
+                    .attr("class", "x-axis")
+                    .attr("transform", `translate(0,${chartHeight})`)
+                    .call(d3.axisBottom(x));
+
+                svg.append("g")
+                    .attr("class", "y-axis")
+                    .call(d3.axisLeft(y));
+
+                svg.append("text")
+                    .attr("x", chartWidth / 2)
+                    .attr("y", 0 - margin.top / 2)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "16px")
+                    .text(`Employment in ${countryName} Over Time`);
+
+                // Create Legend
+                const legend = d3.select("#legend")
+                    .append("div")
+                    .style("font-size", "16px")
+                    .attr("class", "legend");
+
+                variables.forEach(variable => {
+                    const legendItem = legend.append("div")
+                        .attr("class", "legend-item");
+
+                    legendItem.append("div")
+                        .attr("class", "legend-color")
+                        .style("background-color", color[variable]);
+
+                    legendItem.append("div")
+                        .text(variable);
+                });
+
+
+
+            }
+
+
+
+
+            function showPieChart(countryName, countryData) {
+                d3.select("#pie").html("");
+
+                const width = 300, height = 300, radius = Math.min(width, height) / 2;
+                const svg = d3.select("#pie").append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", `translate(${width / 2},${height / 2})`);
+
+                const pie = d3.pie().value(d => d.value);
+                const arc = d3.arc().innerRadius(0).outerRadius(radius);
+                const outerArc = d3.arc().innerRadius(radius * 0.9).outerRadius(radius * 0.9);
+
+                // Use the same color mapping as the stacked bar chart
+                const color = {
+                    "Associate nurses employed in hospitals": "#8dd3c7",
+                    "Total hospital employment": "#ffffb3",
+                    "Physicians employed in hospitals": "#bebada",
+                    "Professional nurses and midwives employed in hospitals": "#fb8072",
+                    "Healthcare assistants employed in hospitals": "#80b1d3",
+                    "Other health service providers employed in hospitals": "#fdb462",
+                    "Other staff employed in hospitals": "#b3de69"
+                };
+                countryData = countryData.filter(d => d.variable != "Total hospital employment");
+                const data = countryData.reduce((acc, curr) => {
+                    const variable = acc.find(d => d.variable === curr.variable);
+                    if (variable) {
+                        variable.value += curr.value;
+                    } else {
+                        acc.push({ variable: curr.variable, value: curr.value });
+                    }
+                    return acc;
+                }, []);
+
+                const total = d3.sum(data, d => d.value);
+
+                const arcs = svg.selectAll(".arc")
+                    .data(pie(data))
+                    .enter().append("g")
+                    .attr("class", "arc");
+
+                // Append the paths for the arcs and add animation
+                arcs.append("path")
+                    .attr("d", arc)
+                    .attr("fill", d => color[d.data.variable])
+                    .on("mouseover", (event, d) => {
+                        tooltip.transition().duration(200).style("opacity", .9);
+                        tooltip.html(`<strong>${d.data.variable}</strong><br>Value: ${((d.data.value / total) * 100).toFixed(1)}%`)
+                            .style("left", `${event.pageX}px`)
+                            .style("top", `${event.pageY - 28}px`)
+                            .style("background", color[d.data.variable]);
+                    })
+                    .on("mouseout", () => {
+                        tooltip.transition().duration(500).style("opacity", 0);
+                    })
+                    .transition() // Add transition for animation
+                    .duration(1000)
+                    .attrTween("d", function (d) {
+                        const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+                        return function (t) {
+                            return arc(interpolate(t));
+                        };
+                    });
+
+                // Append labels conditionally for slices > 10%
+                arcs.append("text")
+                    .filter(d => (d.data.value / total) * 100 > 10) // Filter for slices > 10%
+                    .attr("transform", d => `translate(${outerArc.centroid(d)})`)
+                    .attr("dy", "0.35em")
+                    .style("font-size", "10px")
+                    .style("opacity", 0)
+                    .transition() // Add transition for the text
+                    .delay(1000)
+                    .duration(500)
+                    .style("opacity", 1)
+                    .attr("transform", d => `translate(${arc.centroid(d)})`)
+                    .text(d => `${((d.data.value / total) * 100).toFixed(1)}%`);
+
+                // Tooltip
+                const tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+            }
+        });
+    </script>
+    <!-- Footer-->
+    <footer class="border-top">
+        <div class="container px-4 px-lg-5">
+            <div class="row gx-4 gx-lg-5 justify-content-center">
+                <div class="col-md-10 col-lg-8 col-xl-7">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#!">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#!">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-facebook-f fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#!">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fas fa-circle fa-stack-2x"></i>
+                                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="small text-center text-muted fst-italic">Copyright &copy; Group 7</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
