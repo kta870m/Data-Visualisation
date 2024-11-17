@@ -56,9 +56,7 @@
             margin-right: 5px;
         }
 
-        #pie-legend {
-            margin-top: 10px;
-        }
+   
     </style>
 </head>
 
@@ -69,10 +67,10 @@
     <div id="globe"></div>
 
     <div id="container">
+        <h4 id="title"></h4>
         <div id="chart"></div>
-        <div id="legend"></div>
         <div id="pie"></div>
-        <div id="pie-legend"></div>
+        <div id="legend"></div>
     </div>
 
     <script>
@@ -145,6 +143,7 @@
                 // Clear previous chart and legend
                 d3.select("#chart").html("");
                 d3.select("#legend").html("");
+                d3.select("#title").html("");
 
                 const margin = { top: 30, right: 30, bottom: 40, left: 60 },
                     chartWidth = 500 - margin.left - margin.right,
