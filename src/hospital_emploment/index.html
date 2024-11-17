@@ -139,11 +139,10 @@
                     }
                 });
 
-            function showStackedBarChart(countryName, countryData) {
+                function showStackedBarChart(countryName, countryData) {
                 // Clear previous chart and legend
                 d3.select("#chart").html("");
                 d3.select("#legend").html("");
-                d3.select("#title").html("");
 
                 const margin = { top: 30, right: 30, bottom: 40, left: 60 },
                     chartWidth = 500 - margin.left - margin.right,
@@ -242,6 +241,7 @@
                         .text(variable);
                 });
             }
+
 
             function showPieChart(countryName, countryData) {
                 d3.select("#pie").html("");
