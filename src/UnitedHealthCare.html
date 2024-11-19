@@ -294,9 +294,9 @@
                 .attr("y2", d => yScale(d.Low))
                 .attr("stroke", d => d.Open < d.Close ? "#9acc45" : "#f35644");
 
-            lines.exit().remove();                                                                                                                                      
+            lines.exit().remove();
 
-         
+
             const rects = svg.selectAll("rect")
                 .data(dataset);
 
@@ -347,6 +347,15 @@
         }
 
     </script>
+    <div class="right-navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="health.html">Health And Social</a></li>
+            <li><a href="hospital.html">Hospital Employment</a></li>
+            <li><a href="UnitedHealthCare.html">UnitedHealthCare</a></li>
+            <li><a href="#mainNav">Back to Top</a></li>
+        </ul>
+    </div>
     <!-- Footer-->
     <footer class="border-top">
         <div class="container px-4 px-lg-5">
