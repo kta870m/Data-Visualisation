@@ -12581,20 +12581,20 @@ header.masthead .post-heading .meta a {
 
 .right-navbar {
   position: fixed;
-  top: 50%;
-  right: -150px; /* Ẩn navbar ra ngoài màn hình */
+  top: 40%;
+  right: -130px;
   transform: translateY(-50%);
   background: #ffffff;
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 10px;
-  z-index: 1000;
-  transition: right 0.3s ease; /* Thêm hiệu ứng chuyển động */
+  z-index: 1000; 
+  transition: right 0.3s ease; 
 }
 
 .right-navbar:hover {
-  right: 10px; /* Hiện navbar khi hover */
+  right: 10px; /* Reveal navbar on hover */
 }
 
 .right-navbar ul {
@@ -12620,4 +12620,33 @@ header.masthead .post-heading .meta a {
 .right-navbar ul li a:hover {
   background: #007bff;
   color: #ffffff;
+}
+
+.filter-container {
+  position: fixed;
+  top: 70%; 
+  right: 0;
+  transform: translateY(-50%);
+  background-color: #f8f9fa;
+  border: 1px solid #ccc;
+  border-radius: 5px 0 0 5px;
+  padding: 10px;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.3s ease;
+  z-index: 999; /* Ensure it stays below the right-navbar */
+}
+
+.filter-container:hover {
+  width: 200px; /* Expand on hover */
+}
+
+.filter-label {
+  font-size: 14px;
+  margin-right: 5px;
+  white-space: nowrap;
+}
+
+.filter-select {
+  width: 100%;
 }

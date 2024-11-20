@@ -42,7 +42,7 @@
     }
 
     .volume {
-        margin-top: 10px;
+        margin-top: 40px;
     }
 </style>
 
@@ -89,26 +89,48 @@
     <main class="mb-4">
         <div class="container px-4 px-lg-5">
             <div class="row gx-4 gx-lg-5 justify-content-center">
-                <p class="subheading">This candlestick chart provides a detailed view of the daily, monthly, or yearly
-                    stock trends. Represents market open, close, high, and low values for each period, offering insights
-                    into price fluctuations.</p>
-                <label for="unit-select">By:</label>
-                <select id="unit-select">
-                    <option value="day">Days</option>
-                    <option value="month">Month</option>
-                    <option value="year">Years</option>
-                </select>
+                <h3>Stock Price Trends: Open, Close, High, and Low Analysis</h3>
+                <p class="subheading">This chart offers a comprehensive visualization of stock price trends over
+                    different time
+                    frames—daily, monthly, or yearly. Each candlestick represents key market indicators for the selected
+                    period,
+                    including opening, closing, high, and low prices. This design helps users track price fluctuations,
+                    identify
+                    market trends, and assess the stock's performance in response to external events or internal company
+                    changes.
+                </p>
                 <div id="chart"></div>
                 <div class="volume">
-                    <p class="subheading">This area chart displays the trading volume, indicating investor activity and
-                        market interest. Highlighting the periods of significant buying or selling, correlating them
-                        with price movements.</p>
+                    <h3>Trading Volume Insights: Investor Activity Over Time</h3>
+                    <p class="subheading">This chart visualizes trading activity, showcasing the volume of shares traded
+                        over time.
+                        It highlights periods of significant buying or selling, providing context to stock price
+                        movements observed
+                        in the candlestick chart. By correlating volume spikes with price trends, users can better
+                        understand
+                        investor sentiment and market interest during specific</p>
                     <div id="volume-chart"></div>
                 </div>
             </div>
         </div>
     </main>
-
+    <div class="right-navbar">
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="health.html">Health And Social</a></li>
+            <li><a href="hospital.html">Hospital Employment</a></li>
+            <li><a href="UnitedHealthCare.html">UnitedHealthCare</a></li>
+            <li><a href="#mainNav">Back to Top</a></li>
+        </ul>
+    </div>
+    <div class="filter-container">
+        <label for="unit-select" class="filter-label">Filter by:</label>
+        <select id="unit-select" class="filter-select">
+            <option value="day">Days</option>
+            <option value="month">Month</option>
+            <option value="year">Years</option>
+        </select>
+    </div>    
     <script type="text/javascript">
         const w = 1000;
         const h = 600;
@@ -347,15 +369,6 @@
         }
 
     </script>
-    <div class="right-navbar">
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="health.html">Health And Social</a></li>
-            <li><a href="hospital.html">Hospital Employment</a></li>
-            <li><a href="UnitedHealthCare.html">UnitedHealthCare</a></li>
-            <li><a href="#mainNav">Back to Top</a></li>
-        </ul>
-    </div>
     <!-- Footer-->
     <footer class="border-top">
         <div class="container px-4 px-lg-5">
@@ -394,7 +407,7 @@
     </footer>
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-
+    
 </body>
 
 </html>
