@@ -12582,7 +12582,7 @@ header.masthead .post-heading .meta a {
 .right-navbar {
   position: fixed;
   top: 50%;
-  right: 10px;
+  right: -150px; /* Ẩn navbar ra ngoài màn hình */
   transform: translateY(-50%);
   background: #ffffff;
   border: 1px solid #ddd;
@@ -12590,6 +12590,11 @@ header.masthead .post-heading .meta a {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 10px;
   z-index: 1000;
+  transition: right 0.3s ease; /* Thêm hiệu ứng chuyển động */
+}
+
+.right-navbar:hover {
+  right: 10px; /* Hiện navbar khi hover */
 }
 
 .right-navbar ul {
