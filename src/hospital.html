@@ -41,9 +41,9 @@
         opacity: 0;
     }
 
-    h2 {
+    h3 {
         text-align: center;
-        font-size: 24px;
+        font-size: 20px;
         margin-top: 20px;
     }
 
@@ -126,28 +126,30 @@
     <main class="mb-4">
         <div class="container px-4 px-lg-5">
             <div class="row gx-4 gx-lg-5 justify-content-center" id="txt-chart">
-                <h3>Interactive Workforce Analysis: Global to Local Insights</h3>
+                <h2>Interactive Workforce Analysis: Global to Local Insights</h2>
                 <p class="subheading">
-                    The world map provides an interactive way to explore healthcare workforce distribution globally. Users can click on a country to view its specific data, revealing a grouped bar chart showing workforce trends over the years and a pie chart displaying the proportion of healthcare roles within that country. This integration offers both a global overview and detailed insights, making it easy to analyze and compare healthcare employment across regions.
+                    The world map provides an interactive way to explore healthcare workforce distribution globally.
+                    Users can click on a country to view its specific data, revealing a grouped bar chart showing
+                    workforce trends over the years and a pie chart displaying the proportion of healthcare roles within
+                    that country. This integration offers both a global overview and detailed insights, making it easy
+                    to analyze and compare healthcare employment across regions.
                 </p>
-                <div id="globe"></div>
+                <div id="globe">
+                    <h3 class="subheading">Global Hospital Employment Visualization</h3>
+                </div>
+                <h2 class="chart-title">Employment in Austria Over Time</h2>
+                <p class="subheading">
+                    The visualization combines a Pie Chart to show the workforce composition by role and a Grouped Bar Chart to track changes in 
+                    these roles over time. 
+                    Together, they provide insights into hospital employment distribution and trends.
+                </p>
                 <div class="flx-chart">
                     <div id="chart"></div>
-                    <div id="pie"></div>
+                    <div id="pie">
+                    </div>
                 </div>
                 <div id="legend"></div>
-                <div class="explain">
-                    <p class="subheading">
-                        <strong>Grouped Barchart:</strong> Displays changes over time in various employment categories,
-                        such as professional nurses and other staff.
-                    </p>
-
-                    <p class="subheading">
-                        <strong>Pie Chart:</strong> Illustrates the current composition of the workforce, highlighting
-                        the proportion of different roles.
-                    </p>
-
-                </div>
+            
             </div>
         </div>
     </main>
@@ -216,12 +218,18 @@
                         showStackedBarChart(d.properties.name, countryData);
                         showPieChart(d.properties.name, countryData);
 
-                        const chartSection = document.querySelector(".flx-chart");
+                        const chartSection = document.querySelector(".chart-title");
                         if (chartSection) {
                             chartSection.scrollIntoView({ behavior: "smooth" });
                         }
+
+                        d3.select(".chart-title")
+                         .text(`Employment in ${d.properties.name} Over Time`);
                     }
                 });
+            showStackedBarChart("Austria", data["AUT"]);
+            showPieChart("Austria", data["AUT"]);
+
 
             function showStackedBarChart(countryName, countryData) {
                 // Clear previous chart and legend
@@ -230,7 +238,7 @@
 
                 const margin = { top: 30, right: 30, bottom: 40, left: 60 },
                     chartWidth = 500 - margin.left - margin.right,
-                    chartHeight = 300 - margin.top - margin.bottom;
+                    chartHeight = 400 - margin.top - margin.bottom;
 
                 const svg = d3.select("#chart").append("svg")
                     .attr("width", chartWidth + margin.left + margin.right)
@@ -301,12 +309,12 @@
                     .attr("class", "y-axis")
                     .call(d3.axisLeft(y));
 
-                svg.append("text")
-                    .attr("x", chartWidth / 2)
-                    .attr("y", 0 - margin.top / 2)
-                    .attr("text-anchor", "middle")
-                    .style("font-size", "16px")
-                    .text(`Employment in ${countryName} Over Time`);
+                // svg.append("text")
+                //     .attr("x", chartWidth / 2)
+                //     .attr("y", 0 - margin.top / 2)
+                //     .attr("text-anchor", "middle")
+                //     .style("font-size", "16px")
+                //     .text(`Employment in ${countryName} Over Time`);
 
                 // Create Legend
                 const legend = d3.select("#legend")
@@ -326,14 +334,12 @@
                         .text(variable);
                 });
 
-
-
             }
 
             function showPieChart(countryName, countryData) {
                 d3.select("#pie").html("");
 
-                const width = 300, height = 300, radius = Math.min(width, height) / 2;
+                const width = 400, height = 400, radius = Math.min(width, height) / 2;
                 const svg = d3.select("#pie").append("svg")
                     .attr("width", width)
                     .attr("height", height)
@@ -413,6 +419,7 @@
                 const tooltip = d3.select("body").append("div")
                     .attr("class", "tooltip")
                     .style("opacity", 0);
+
             }
         });
     </script>
@@ -422,6 +429,7 @@
             <li><a href="health.html">Health And Social</a></li>
             <li><a href="hospital.html">Hospital Employment</a></li>
             <li><a href="UnitedHealthCare.html">UnitedHealthCare</a></li>
+            <li><a href="#globe">Global Map</a></li>
             <li><a href="#mainNav">Back to Top</a></li>
         </ul>
     </div>
